@@ -67,5 +67,6 @@ class Kernel extends HttpKernel
         'auth'  => \App\Http\Middleware\Authenticate::class, 
         // ลงทะเบียนผู้คุ้มกันหลังบ้าน Enterprise CMS
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
+        'permission' => \App\Http\Middleware\CheckPermission::class,
     ];
 }

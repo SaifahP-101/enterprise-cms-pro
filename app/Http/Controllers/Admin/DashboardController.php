@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Content;
 use App\Models\Category;
 use App\Models\Page;
+use App\Models\ContentDownloadLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -22,10 +23,12 @@ class DashboardController extends Controller
         $perfYear   = $request->input('perf_year', Carbon::now()->year);
         $perfMonth  = $request->input('perf_month', 'all');
 
-        // 2. ดึงรายการปีทั้งหมดที่มีการบันทึกจัดเก็บสารสนเทศจริงในตู้ฐานข้อมูล
-        $contentYears = Content::selectRaw('YEAR(created_at) as year')->pluck('year')->toArray();
-        $pageYears    = Page::selectRaw('YEAR(created_at) as year')->pluck('year')->toArray();
-        $availableYears = array_unique(array_merge($contentYears, $pageYears, [Carbon::now()->year]));
+        // 2. ดึงรายการปีทั้งหมดที่มีการบันทึกจัดเก็บสารสนเทศจริงในฐานข้อมูล (รวมถึงประวัติการดาวน์โหลด)
+        $contentYears  = Content::selectRaw('YEAR(created_at) as year')->pluck('year')->toArray();
+        $pageYears     = Page::selectRaw('YEAR(created_at) as year')->pluck('year')->toArray();
+        $downloadYears = DB::table('content_download_logs')->selectRaw('YEAR(created_at) as year')->pluck('year')->toArray();
+
+        $availableYears = array_unique(array_merge($contentYears, $pageYears, $downloadYears, [Carbon::now()->year]));
         rsort($availableYears);
 
         // 3. คำนวณยอดรวมสถิติสะสมภาพรวมหลัก (Global Core Counters)
@@ -33,13 +36,14 @@ class DashboardController extends Controller
         $totalContents   = Content::count();
         $totalTraffic    = Content::sum('view_count') + Page::sum('view_count');
         $totalShares     = Content::sum('share_count');
+        $totalDownloads  = Content::sum('download_count');
 
         // 4. ดึงฟีดรายการบทความล่าสุดผ่านสถาปัตยกรรม Eager Loading ตัดปัญหา N+1 Query
         $recentArtifacts = Content::with('category')->orderBy('updated_at', 'desc')->take(4)->get();
 
         /**
          * 5. LINE TREND CHART COMPONENT QUERY (กรองอิสระผ่านตัวแปร trend_year)
-         * รวมศูนย์ยอดการเข้าชมระบบและยอดแชร์รายเดือนของตารางข้อมูลทั้งหมด
+         * รวมศูนย์ยอดการเข้าชมระบบ ยอดแชร์ และยอดดาวน์โหลดรายเดือน
          */
         $unifiedStats = DB::table(function ($query) use ($trendYear) {
             $query->select(DB::raw('MONTH(created_at) as month'), 'view_count', 'share_count')
@@ -58,18 +62,28 @@ class DashboardController extends Controller
         ->get()
         ->keyBy('month');
 
-        $monthlyViews = [];
-        $monthlyShares = [];
+        // ⚡ ดึงสถิติจำนวนการดาวน์โหลดเอกสารรายเดือนจากตาราง content_download_logs ประจำปีที่เลือก
+        $downloadStats = DB::table('content_download_logs')
+            ->select(DB::raw('MONTH(created_at) as month'), DB::raw('COUNT(*) as total_downloads'))
+            ->whereYear('created_at', $trendYear)
+            ->groupBy('month')
+            ->pluck('total_downloads', 'month');
+
+        $monthlyViews     = [];
+        $monthlyShares    = [];
+        $monthlyDownloads = [];
+
         for ($m = 1; $m <= 12; $m++) {
-            $monthlyViews[]  = $unifiedStats->has($m) ? (int)$unifiedStats[$m]->total_views : 0;
-            $monthlyShares[] = $unifiedStats->has($m) ? (int)$unifiedStats[$m]->total_shares : 0;
+            $monthlyViews[]     = $unifiedStats->has($m) ? (int)$unifiedStats[$m]->total_views : 0;
+            $monthlyShares[]    = $unifiedStats->has($m) ? (int)$unifiedStats[$m]->total_shares : 0;
+            $monthlyDownloads[] = isset($downloadStats[$m]) ? (int)$downloadStats[$m] : 0;
         }
 
         /**
          * 6. PER-CONTENT PERFORMANCE BAR CHART QUERY (กรองอิสระผ่าน perf_year และ perf_month)
-         * คำนวณผลสัมฤทธิ์คัดเลือกสรรหาบทความยอดนิยมสูงสุด 10 อันดับแรกตามช่วงเวลาจำเพาะ
+         * คำนวณผลสัมฤทธิ์คัดเลือกสรรหาบทความยอดนิยมสูงสุด 10 อันดับแรกตามช่วงเวลาจำเพาะ (รวมยอดดาวน์โหลด)
          */
-        $topContentsQuery = Content::select('id', 'title', 'view_count', 'share_count')
+        $topContentsQuery = Content::select('id', 'title', 'view_count', 'share_count', 'download_count')
             ->whereYear('created_at', $perfYear)
             ->whereNull('deleted_at');
 
@@ -77,22 +91,24 @@ class DashboardController extends Controller
             $topContentsQuery->whereMonth('created_at', $perfMonth);
         }
 
-        $topContentsData = $topContentsQuery->orderByRaw('(view_count + share_count) DESC')
+        $topContentsData = $topContentsQuery->orderByRaw('(view_count + share_count + download_count) DESC')
             ->take(10)
             ->get();
 
-        $chartContentLabels = [];
-        $chartContentViews  = [];
-        $chartContentShares = [];
+        $chartContentLabels    = [];
+        $chartContentViews     = [];
+        $chartContentShares    = [];
+        $chartContentDownloads = [];
 
         foreach ($topContentsData as $content) {
             $shortTitle = mb_strwidth($content->title, 'UTF-8') > 30 
                 ? mb_strimwidth($content->title, 0, 28, '...', 'UTF-8') 
                 : $content->title;
 
-            $chartContentLabels[] = $shortTitle;
-            $chartContentViews[]  = (int)$content->view_count;
-            $chartContentShares[] = (int)$content->share_count;
+            $chartContentLabels[]    = $shortTitle;
+            $chartContentViews[]     = (int)$content->view_count;
+            $chartContentShares[]    = (int)$content->share_count;
+            $chartContentDownloads[] = (int)($content->download_count ?? 0);
         }
 
         // รายชื่อโครงสร้างดัชนีเดือนภาษาไทยสากล
@@ -107,9 +123,11 @@ class DashboardController extends Controller
             'totalContents',
             'totalTraffic',
             'totalShares',
+            'totalDownloads',
             'recentArtifacts',
             'monthlyViews',
             'monthlyShares',
+            'monthlyDownloads',
             'trendYear',
             'perfYear',
             'perfMonth',
@@ -117,6 +135,7 @@ class DashboardController extends Controller
             'chartContentLabels',
             'chartContentViews',
             'chartContentShares',
+            'chartContentDownloads',
             'thaiMonths'
         ));
     }

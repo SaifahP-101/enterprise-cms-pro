@@ -11,11 +11,43 @@
 
     <!--  Local Assets Injection (แทนที่ระบบ CDN เดิมเพื่อความปลอดภัยของระบบองค์กร) -->
     <link href="{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
-    
+    <!-- Local Typography & Fonts (Local Vendor) -->
+    <link rel="stylesheet" href="{{ asset('vendor/fonts.css') }}">
+
     <style>
-        body { display: flex; flex-direction: column; min-height: 100vh; background-color: #f8f9fa; }
+        :root {
+            --font-sarabun: 'TH Sarabun New', 'THSarabunNew', 'Sarabun', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-sarabun);
+            font-size: 14pt;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
         main { flex: 1; }
         .dropdown-hover:hover > .dropdown-menu { display: block; }
+
+        /* 📌 หัวข้อหลัก (Main Headings): 18pt */
+        h1, h2, .h1, .h2, .heading-main, .main-title, .page-title {
+            font-family: var(--font-sarabun);
+            font-size: 18pt;
+            font-weight: 700;
+        }
+
+        /* 📌 หัวข้อรอง (Sub Headings): 16pt */
+        h3, h4, h5, h6, .h3, .h4, .h5, .h6, .heading-sub, .sub-title, .card-title, .navbar-brand, .nav-link, .btn {
+            font-family: var(--font-sarabun);
+            font-size: 16pt;
+            font-weight: 600;
+        }
+
+        /* 📌 เนื้อหาทั่วไป (Body & Content): 14pt */
+        p, span, div, li, a, td, th, label, input, textarea, select, button, .content-body {
+            font-family: var(--font-sarabun);
+        }
     </style>
 </head>
 <body>

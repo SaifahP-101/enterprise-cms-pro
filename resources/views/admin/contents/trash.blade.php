@@ -38,8 +38,7 @@
                     <tr>
                         <th width="70" class="text-center py-3 ps-4">ID</th>
                         <th width="120" class="text-center py-3">ภาพปกเดิม</th>
-                        <th class="py-3">ชื่อพาดหัวหลักบทความ / สังกัดหมวดหมู่</th>
-                        <th width="150" class="text-center py-3">ประเภทข่าว</th>
+                        <th class="py-3">ชื่อพาดหัวหลักบทความ / สังกัดหมวดหมู่</th> 
                         <th width="180" class="text-center py-3">⏳ วันเวลาที่ถูกลบ</th>
                         <th width="200" class="text-center py-3 pe-4">การปฏิบัติการกู้คืนข้อมูล</th>
                     </tr>
@@ -68,18 +67,7 @@
                                 <i class="bi bi-folder"></i> หมวดหมู่เดิม: <strong class="text-secondary">{{ $content->category->name ?? 'ไม่ระบุ' }}</strong>
                             </span>
                         </td>
-                        
-                        <!-- 4. ประเภทโครงสร้างหลัก -->
-                        <td class="text-center py-3">
-                            @if($content->type === 'NEWS')
-                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-10 px-2 py-1 rounded"> ประชาสัมพันธ์</span>
-                            @elseif($content->type === 'ACTIVITY')
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-10 px-2 py-1 rounded"><i class="bi bi-list-nested"></i> ภาพกิจกรรม</span>
-                            @else
-                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-10 px-2 py-1 rounded text-dark"><i class="bi bi-megaphone"></i> ประกาศสำคัญ</span>
-                            @endif
-                        </td>
-                        
+                         
                         <!-- 5. วันเวลาที่ถูกกวาดล้างลงถังขยะ -->
                         <td class="text-center py-3 small bg-light-subtle text-danger fw-medium">
                             {{ $content->deleted_at ? $content->deleted_at->format('d/m/Y H:i') : 'ไม่ระบุ' }} น.

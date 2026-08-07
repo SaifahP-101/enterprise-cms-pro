@@ -53,6 +53,19 @@ return [
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
         ],
 
+        /*
+        |--------------------------------------------------------------------------
+        | ☁️ Google Drive Storage Disk (OAuth 2.0 Integration)
+        |--------------------------------------------------------------------------
+        */
+        'google' => [
+            'driver'        => 'google',
+            'folder_id'     => env('GOOGLE_DRIVE_FOLDER_ID'),
+            'client_id'     => env('GOOGLE_DRIVE_CLIENT_ID'),
+            'client_secret' => env('GOOGLE_DRIVE_CLIENT_SECRET'),
+            'refresh_token' => env('GOOGLE_DRIVE_REFRESH_TOKEN'),
+        ],
+
     ],
 
     /*

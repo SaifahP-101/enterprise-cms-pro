@@ -39,4 +39,9 @@ class Category extends Model
     {
         return $this->hasMany(Content::class)->orderBy('sort_order', 'asc');
     }
+
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(\App\Models\User::class, 'category_user', 'category_id', 'user_id');
+    }
 }

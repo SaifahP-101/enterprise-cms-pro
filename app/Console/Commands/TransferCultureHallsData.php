@@ -1,0 +1,212 @@
+<?php
+
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
+use App\Models\Content;
+use App\Models\ContentGallery;
+use App\Models\Tag;
+use Carbon\Carbon;
+
+class TransferCultureHallsData extends Command
+{
+    /**
+     * The name and signature of the console command.
+     * (ยกเลิก Option --fresh ตามความต้องการ)
+     *
+     * @var string
+     */
+    protected $signature = 'cms:transfer-culturehalls';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Transfer culturehalls data and copy physical files from old CMS to Enterprise CMS (Category 12)';
+
+    /**
+     * Execute the console command.
+     *
+     * @return int
+     */
+    public function handle()
+    {
+        $this->info('🚀 Starting Data, Tags & Physical Files Transfer for Culture Halls...');
+
+        // 1. กำหนด Path ต้นทางและปลายทาง (อิงจากระบบเดิม)
+        // หมายเหตุ: กรุณาตรวจสอบชื่อโฟลเดอร์ old/images/culturehall ว่าตรงกับระบบเก่าหรือไม่
+        $oldBasePath        = public_path('old/images/culturehall');
+        $oldBasePathPDF     = public_path('old/images/culturehall/pdf');
+        $oldBasePathGallery = public_path('old/images/culturehall/gallery');
+        $oldBasePathAPP     = public_path('old/app'); 
+        
+        $newCoverPath     = storage_path('app/public/contents/covers');
+        $newSecurePdfPath = storage_path('app/secure_docs');
+
+        File::ensureDirectoryExists($newCoverPath, 0755, true);
+        File::ensureDirectoryExists($newSecurePdfPath, 0755, true);
+ 
+        // 2. ดึงข้อมูลจากฐานข้อมูลเก่า DB 1 (ตาราง culturehalls)
+        $oldRecords = DB::connection('mysql_old')->table('culturehalls')->get();
+        
+        if ($oldRecords->isEmpty()) {
+            $this->warn('⚠️ No records found in culturehalls table.');
+            return 0;
+        }
+
+        $bar = $this->output->createProgressBar(count($oldRecords));
+
+        foreach ($oldRecords as $old) {
+            // 3. จัดการเนื้อหาหลักจากไฟล์ .text แปลงเป็น LongText
+            $bodyContent = '';
+            if (!empty($old->file_text)) { 
+                $textPath = $oldBasePathAPP . '/' . $old->file_text;
+                if (File::exists($textPath)) {
+                    $bodyContent = File::get($textPath);
+                }
+            }
+
+            // 4. คัดลอกรูปภาพหน้าปก Cover
+            $coverImageValue = null;
+            if (!empty($old->image_desktop)) {
+                $sourceCover = $oldBasePath . '/' . $old->image_desktop;
+                if (File::exists($sourceCover)) {
+                    File::copy($sourceCover, $newCoverPath . '/' . $old->image_desktop);
+                    $coverImageValue = 'contents/covers/' . $old->image_desktop;
+                }
+            }
+
+            // 5. คัดลอกไฟล์เอกสาร PDF ลง Secure Storage
+            $pdfPathValue = null;
+            if (!empty($old->file_pdf)) {
+                $sourcePdf = $oldBasePathPDF . '/' . $old->file_pdf;
+                if (File::exists($sourcePdf)) {
+                    File::copy($sourcePdf, $newSecurePdfPath . '/' . $old->file_pdf);
+                    $pdfPathValue = 'secure_docs/' . $old->file_pdf;
+                }
+            }
+
+            // 6. จัดการ Slug ให้รองรับภาษาไทย และไม่ซ้ำกัน (ป้องกัน Error 1062)
+            $slug = !empty($old->slug) ? $old->slug : null;
+            if (!$slug) {
+                $cleanTitle = preg_replace('/[^A-Za-z0-9ก-๙\s]/u', '', strip_tags($old->title));
+                $thaiSlug = preg_replace('/\s+/u', '-', trim($cleanTitle));
+                // ตัดความยาวและต่อด้วย ID + Random String ป้องกันการซ้ำซ้อน 100%
+                $slug = mb_substr($thaiSlug ?: 'culture', 0, 100) . '-culture-' . $old->id . '-' . Str::random(4);
+            }
+
+            // 7. บันทึกข้อมูลลงตาราง Contents 
+            $content = Content::create([
+                'category_id'      => 12, // 12 = หอวัฒนธรรม[cite: 2]
+                'title'            => strip_tags($old->title), // ป้องกัน XSS
+                'slug'             => $slug,
+                'type'             => 'ACTIVITY', // กำหนด Type สำหรับหมวดหมู่นี้
+                'body'             => $bodyContent,
+                'cover_image'      => $coverImageValue,
+                'secure_pdf_path'  => $pdfPathValue,
+                'view_count'       => $old->count_view ?? 0,
+                'download_count'   => 0,
+                'meta_title'       => $old->meta_title ?? strip_tags($old->title),
+                'meta_description' => $old->meta_description ?? strip_tags($old->intro ?? ''),
+                'user_id'          => 1, // กำหนดให้ Super Admin เป็นผู้สร้าง
+                'is_active'        => (isset($old->status) && $old->status == 1) ? 1 : 0,
+                'published_at'     => isset($old->date) ? Carbon::parse($old->date) : now(),
+                'created_at'       => $old->created_at ?? now(),
+                'updated_at'       => $old->updated_at ?? now(),
+            ]);
+
+            // 8. ดึงฟิลด์ย่อย (Non-main fields) มาสร้างเป็น Tags อัตโนมัติ ป้องกัน Truncate Error
+            $tagIdsToSync = [];
+            $tagFields = [
+                'คีย์เวิร์ด' => $old->meta_keyword,
+            ];
+
+            foreach ($tagFields as $prefix => $value) {
+                if (!empty($value)) {
+                    // หากมีการคั่นด้วยลูกน้ำ (Comma) ให้แยกเป็นหลายๆ Tag
+                    $items = explode(',', $value);
+                    foreach ($items as $item) {
+                        $item = trim($item);
+                        if (!empty($item)) {
+                            $tagName = "{$prefix} : {$item}";
+                            
+                            // 8.1 สร้าง Slug ภาษาไทยสำหรับ Tag
+                            $cleanTag = preg_replace('/[^A-Za-z0-9ก-๙\s\-]/u', '', $tagName);
+                            $tagSlug = preg_replace('/\s+/u', '-', trim($cleanTag));
+                            
+                            // 8.2 ป้องกันความยาวเกินจนถูก MySQL ตัด (Truncate)
+                            $tagSlug = mb_substr($tagSlug, 0, 100); 
+
+                            // 8.3 ค้นหาจาก "ชื่อแท็ก" (Name) แทน Slug เพื่อความแม่นยำ
+                            $tag = Tag::where('name', $tagName)->first();
+                            
+                            if (!$tag) {
+                                // เช็คกันเหนียวว่า Slug ไปซ้ำกับใครหรือไม่
+                                if (Tag::where('slug', $tagSlug)->exists()) {
+                                    $tagSlug = $tagSlug . '-' . Str::random(4);
+                                }
+                                
+                                // สร้าง Tag ใหม่
+                                $tag = Tag::create([
+                                    'slug' => $tagSlug ?: 'tag-' . Str::random(6),
+                                    'name' => $tagName
+                                ]);
+                            }
+
+                            $tagIdsToSync[] = $tag->id;
+                        }
+                    }
+                }
+            }
+
+            // Sync Tags เข้ากับ Content
+            if (count($tagIdsToSync) > 0) {
+                $content->tags()->syncWithoutDetaching($tagIdsToSync); //[cite: 2]
+            }
+
+            // 9. จัดการรูปภาพ Gallery
+            // อ้างอิงจาก Naming Convention ของระบบ คาดว่าตารางชื่อ culturehall_gallerys
+            if (Schema::connection('mysql_old')->hasTable('culturehall_gallerys')) {
+                $newGalleryPath = storage_path('app/public/contents/galleries/' . $content->id);
+                
+                $oldGalleries = DB::connection('mysql_old')
+                    ->table('culturehall_gallerys')
+                    ->where('culturehall_id', $old->id) 
+                    ->get();
+
+                if ($oldGalleries->isNotEmpty()) {
+                    File::ensureDirectoryExists($newGalleryPath, 0755, true);
+
+                    foreach ($oldGalleries as $index => $gallery) {
+                        if (!empty($gallery->image_desktop)) {
+                            $sourceGallery = $oldBasePathGallery . '/' . $gallery->image_desktop;
+                            if (File::exists($sourceGallery)) {
+                                File::copy($sourceGallery, $newGalleryPath . '/' . $gallery->image_desktop);
+                                
+                                ContentGallery::create([
+                                    'content_id' => $content->id,
+                                    'file_path'  => 'contents/galleries/' . $content->id . '/' . $gallery->image_desktop,
+                                    'sort_order' => $index + 1,
+                                    'created_at' => $gallery->created_at ?? now(),
+                                    'updated_at' => $gallery->updated_at ?? now(),
+                                ]);
+                            }
+                        }
+                    }
+                }
+            }
+
+            $bar->advance();
+        }
+
+        $bar->finish();
+        $this->newLine();
+        $this->info('✅ Culture Halls Data, Tags, and Files Migration Completed Successfully!');
+        return 0;
+    }
+}

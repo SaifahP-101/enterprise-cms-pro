@@ -260,7 +260,7 @@
                     <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center" style="background: linear-gradient(131deg, rgb(0 0 0 / 74%) 0%, rgb(0 0 0 / 21%) 71%);">
                         <div class="container text-white">
                             <span class="badge bg-warning text-dark mb-2 px-3 py-1.5 font-heading">สำนักศิลปะและวัฒนธรรม</span>
-                            <h1 class="display-5 fw-bold font-heading mb-2">{{ $slide->title }}</h1>
+                            <h1 class="display-5 fw-bold font-heading my-4" style="color: #FFF !important; font-size: 3rem !important;">{{ $slide->title }}</h1>
                             <p class="lead opacity-90 mb-4">{{ $slide->subtitle }}</p>
                             @if($slide->link_url)
                                 <a href="{{ $slide->link_url }}" class="btn btn-tru-gold px-4 py-2">อ่านรายละเอียด</a>
@@ -649,7 +649,7 @@
         <div class="portal-bar">
             <div class="row align-items-center g-4">
                 <div class="col-lg-4 text-center text-lg-start">
-                    <h3 class="fw-bold mb-2 font-heading">ลิงก์ด่วนและระบบสารสนเทศ</h3>
+                    <h3 class="fw-bold mb-2 font-heading text-white">ลิงก์ด่วนและระบบสารสนเทศ</h3>
                     <p class="text-white-50 small mb-0">เข้าถึงข้อมูล บริหารจัดการ และส่งเรื่องร้องเรียนข้อเสนอแนะได้ในหนึ่งคลิก</p>
                 </div>
                 <div class="col-lg-8">
@@ -665,7 +665,7 @@
                             </div>
                         </div>
                         <div class="col-sm-5">
-                            <a href="#" class="portal-btn">
+                            <a href="http://localhost:8000/page/%E0%B8%84%E0%B8%B9%E0%B9%88%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B8%9B%E0%B8%A3%E0%B8%B0%E0%B8%8A%E0%B8%B2%E0%B8%8A%E0%B8%99-page-16-D7S2" class="portal-btn">
                                 <i class="bi bi-person-workspace fs-2 text-warning"></i>
                                 <div class="text-start">
                                     <div class="fw-bold">คู่มือประชาชน</div>
@@ -685,7 +685,7 @@
             <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
                 <div class="modal-header p-4 text-white" style="background: linear-gradient(135deg, var(--tru-purple-dark) 0%, #1E082A 100%); border-bottom: 3px solid var(--tru-gold);">
                     <div>
-                        <h5 class="modal-title fw-bold font-heading id="feedbackModalLabel">
+                        <h5 class="modal-title fw-bold font-heading text-white" id="feedbackModalLabel">
                             <i class="bi bi-chat-left-dots-fill text-warning me-2"></i>ช่องทางรับฟังความคิดเห็น ข้อเสนอแนะ และการร้องเรียน
                         </h5>
                         <p class="small text-white-50 mb-0">สำนักศิลปะและวัฒนธรรม มหาวิทยาลัยราชภัฏเทพสตรี</p>

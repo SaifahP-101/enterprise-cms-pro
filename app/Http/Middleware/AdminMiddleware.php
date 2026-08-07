@@ -9,20 +9,30 @@ use Illuminate\Support\Facades\Auth;
 class AdminMiddleware
 {
     /**
-     * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @return mixed
+     * ดักจับสิทธิ์การเข้าถึงพื้นที่บริหารจัดการหลังบ้าน (/admin/*)
      */
     public function handle(Request $request, Closure $next)
     {
-        // 🛡️ RBAC Gate Protection: ต้องเข้าเงื่อนไขว่าล็อกอินแล้ว และคีย์ฟิลด์ is_admin ในตาราง Users ต้องเป็น true
-        if (Auth::check() && Auth::user()->is_admin) {
+        // 1. ตรวจสอบว่าได้ล็อกอินเข้าสู่ระบบหรือยัง
+        if (!Auth::check()) {
+            return redirect()->route('login');
+        }
+
+        $user = Auth::user();
+
+        // 🛡️ 2. อนุญาตให้เข้าหลังบ้านได้ หากเป็น Super Admin (is_admin = 1) หรือ "มี Roles ผูกอยู่"
+        if ($user->is_admin || $user->roles()->exists()) {
             return $next($request);
         }
 
-        // หากไม่มีสิทธิ์เข้าถึง ให้ดีดกลับหน้าแรกพร้อมสลักข้อความแจ้งเตือนความปลอดภัย
-        return redirect('/')->with('error', 'สิทธิ์การเข้าถึงพื้นที่ระบบควบคุมหลังบ้านองค์กรถูกปฏิเสธ');
+        // 3. หากเป็น User ธรรมดาที่ไม่มี Role ใดๆ เลย ให้ปฏิเสธการเข้าถึง
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => '🚨 คุณไม่มีสิทธิ์เข้าถึงระบบบริหารจัดการหลังบ้าน'
+            ], 403);
+        }
+
+        return redirect()->route('home')->with('error', '🚨 บัญชีของคุณไม่มีสิทธิ์เข้าถึงส่วนผู้ดูแลระบบ');
     }
 }

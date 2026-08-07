@@ -54,7 +54,9 @@
                                         <div class="text-secondary">
                                             <span class="text-muted">┗ ลำดับ {{ $child->sort_order }}:</span> 
                                             <span class="fw-bold text-dark">{{ $child->title }}</span>
-                                            <code class="ms-2 text-primary" style="font-size: 0.75rem;">({{ $child->url ?? '#' }})</code>
+                                            <code class="ms-2 text-primary d-inline-block text-truncate" style="font-size: 0.75rem; max-width: 150px; vertical-align: bottom;">
+    ({{ $child->url ?? '#' }})
+</code>
                                         </div>
                                         <div class="d-flex gap-1">
                                             <button class="btn btn-xs text-warning p-0 border-0 bg-transparent fw-bold" data-bs-toggle="modal" data-bs-target="#editMenuModal-{{ $child->id }}" style="font-size:0.75rem;"><i class="bi bi-gear"></i></button>

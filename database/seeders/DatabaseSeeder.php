@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             ContentSeeder::class,
             SlideshowSeeder::class,
             ModalPopupSeeder::class,
+            RoleAndPermissionSeeder::class,
         ]);
 
         // 🔒 ล็อก Foreign Key กลับสู่สภาพความปลอดภัยเดิม

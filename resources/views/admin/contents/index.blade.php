@@ -67,6 +67,7 @@
                     <thead class="table-light text-secondary small text-uppercase">
                         <tr>
                             <th style="width: 60px;">ID</th>
+                            <th width="90" class="text-center py-3">ภาพปก</th>
                             <th>หัวข้อพาดหัวข่าว / ประกาศ</th>
                             <th>หมวดหมู่หลัก</th> 
                             <th>ยอดวิวรวม</th>
@@ -78,6 +79,15 @@
                         @foreach($contents as $item)
                             <tr>
                                 <td class="fw-bold text-secondary">#{{ $item->id }}</td>
+                                 <td class="text-center py-3">
+                                    <div class="d-inline-block rounded border p-1 bg-white shadow-3xs" style="width: 80px; height: 50px; overflow: hidden;">
+                                        @if($item->cover_image)
+                                            <img src="{{ asset('storage/' . $item->cover_image) }}" class="w-100 h-100 rounded" style="object-fit: cover; object-position: center;">
+                                        @else
+                                            <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted bg-light" style="font-size: 0.65rem;">NO IMAGE</div>
+                                        @endif
+                                    </div>
+                                </td>
                                 <td>
                                     <span class="d-block fw-semibold text-dark text-truncate" style="max-width: 320px;">{{ $item->title }}</span>
                                     <small class="text-muted d-block" style="font-size: 0.75rem;">URL: /content/{{ $item->slug }}</small>

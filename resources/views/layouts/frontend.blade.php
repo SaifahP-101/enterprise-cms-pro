@@ -4,20 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-
+    <link rel="shortcut icon" href="{{ asset('assets/images/logo-tru-culture.png') }}">
+    
     <!-- 1. DYNAMIC SEO & OPEN GRAPH INJECTION -->
     @yield('seo')
 
     <!-- 2. CORE CSS STYLESHEETS & ICONS -->
-    <!-- Bootstrap 5.3 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons (100% Vector Icons) -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Bootstrap 5.3 CSS (Local Vendor) -->
+    <link href="{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+    <!-- Bootstrap Icons (Local Vendor) -->
+    <link rel="stylesheet" href="{{ asset('vendor/bootstrap-icons/bootstrap-icons.min.css') }}">
     
-    <!-- 3. CORE TYPOGRAPHY & FONTS -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 3. CORE TYPOGRAPHY & FONTS (Local Vendor) -->
+    <link rel="stylesheet" href="{{ asset('vendor/fonts.css') }}">
 
     <!-- 4. VISUAL IDENTITY THEME (TRU PURPLE & GOLD SYSTEM) -->
     <style>
@@ -30,46 +29,83 @@
             --tru-bg-lavender: #F3E8FF;
             --tru-slate-dark: #1E293B;
             --tru-slate-light: #F8FAFC;
+
+            /* Font Families */ 
+            --font-body: 'Sarabun', sans-serif;
         }
 
+        /* ========================================================================= */
+        /* 🔤 GLOBAL TYPOGRAPHY HIERARCHY (18pt / 16pt / 14pt)                       */
+        /* ========================================================================= */
+        
         body {
-            font-family: 'Sarabun', sans-serif;
+            font-family: var(--font-body);
+            font-size: 14pt; /* 📌 บังคับเนื้อหาหลัก 14pt */
             color: var(--tru-slate-dark);
             background-color: #FFFFFF;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
         }
 
-        h1, h2, h3, h4, h5, h6, .font-heading, .navbar-brand, .nav-link, .btn {
-            font-family: 'Kanit', sans-serif;
+        /* 📌 เนื้อหาทั่วไป (Body Content) -> 14pt */
+        p, span, div, li, td, th, a {
+            font-size: 14pt;
         }
+
+        /* 📌 หัวข้อหลัก (Main Headings) -> 18pt */
+        h1, .h1, .main-title {
+            font-family: var(--font-body);
+            font-size: 18pt !important;
+            font-weight: 700;
+            color: var(--tru-purple-dark);
+            line-height: 1.4;
+        }
+
+        /* 📌 หัวข้อรอง (Sub Headings) -> 16pt */
+        h2, h3, h4, h5, h6, .h2, .h3, .h4, .h5, .h6, .sub-title {
+            font-family: var(--font-body);
+            font-size: 16pt !important;
+            font-weight: 600;
+            color: var(--tru-purple);
+            line-height: 1.4;
+        }
+
+        /* ========================================================================= */
+        /* 🎨 UI COMPONENTS STYLING (ป้องกัน Layout พังจาก 14pt ด้วยหน่วย rem)      */
+        /* ========================================================================= */
 
         /* Top Bar Header */
         .top-bar {
             background: linear-gradient(135deg, var(--tru-purple-dark) 0%, #1E082A 100%);
             color: #FFF;
-            font-size: 0.85rem;
+            font-size: 0.85rem !important; /* ปรับให้พอดีกับแถบบน */
             padding: 8px 0;
             border-bottom: 2px solid var(--tru-gold);
         }
+        .top-bar span, .top-bar i { font-size: 0.85rem !important; }
         .top-bar a {
             color: #E9D5FF;
             text-decoration: none;
             transition: all 0.2s ease;
         }
-        .top-bar a:hover {
-            color: var(--tru-gold);
-        }
+        .top-bar a:hover { color: var(--tru-gold); }
 
         /* Navbar Header & Dynamic Dropdown Styling */
         .navbar-tru {
             background-color: rgba(255, 255, 255, 0.98);
             box-shadow: 0 4px 20px rgba(76, 29, 149, 0.08);
             padding: 10px 0;
+            font-family: var(--font-body); /* เมนูใช้ Kanit ให้อ่านง่าย */
         }
+        .navbar-brand div { font-size: 1.1rem !important; }
+        .navbar-brand div:last-child { font-size: 0.8rem !important; }
+        
         .nav-link {
             color: var(--tru-slate-dark) !important;
+            font-size: 1rem !important; /* ขนาดเมนูที่เหมาะสม */
             font-weight: 500;
             padding: 8px 16px !important;
             transition: all 0.2s ease;
@@ -89,7 +125,7 @@
             min-width: 220px;
         }
         .navbar-tru .dropdown-item {
-            font-size: 0.92rem;
+            font-size: 0.95rem !important;
             font-weight: 500;
             color: var(--tru-slate-dark);
             padding: 8px 20px;
@@ -101,7 +137,6 @@
             padding-left: 24px;
         }
 
-        /* Desktop Hover Effect for Dropdowns */
         @media (min-width: 992px) {
             .navbar-tru .nav-item.dropdown:hover .dropdown-menu {
                 display: block;
@@ -110,19 +145,15 @@
         }
 
         @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(8px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .btn-tru-gold {
             background: linear-gradient(135deg, var(--tru-gold) 0%, #B45309 100%);
             color: #FFFFFF !important;
+            font-family: var(--font-body);
+            font-size: 1rem !important;
             font-weight: 600;
             border-radius: 30px;
             padding: 8px 24px !important;
@@ -140,13 +171,16 @@
             background-color: #0F172A;
             color: #94A3B8;
             border-top: 5px solid var(--tru-purple);
-            font-size: 0.9rem;
             margin-top: auto;
+            font-family: var(--font-body);
+        }
+        footer p, footer li, footer a, footer span {
+            font-size: 0.95rem !important; /* ย่อฟอนต์ Footer ไม่ให้เทอะทะ */
         }
         .footer-heading {
             color: #FFFFFF;
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: 1.15rem !important;
             margin-bottom: 20px;
             position: relative;
             padding-bottom: 8px;
@@ -178,6 +212,12 @@
             color: var(--tru-gold);
             padding-left: 4px;
         } 
+
+        .btn:hover {
+            color: #FFF !important;
+            background-color: #4C1D95;
+            border-color: #4C1D95 !important;
+        }
     </style>
 
     @stack('styles')
@@ -188,15 +228,15 @@
     <div class="top-bar d-none d-lg-block">
         <div class="container d-flex justify-content-between align-items-center">
             <div class="d-flex gap-4">
-                <span><i class="bi bi-telephone-fill text-white me-1"></i> 036 - 413096</span>
-                <span><i class="bi bi-geo-alt-fill text-white me-1"></i> 321 ต.ทะเลชุบศร อ.เมือง จ.ลพบุรี 15000</span>
-                <span><i class="bi bi-clock-fill text-white me-1"></i> 08:30 - 16:30 น. (จันทร์ - ศุกร์)</span>
+                <span><i class="bi bi-telephone-fill text-warning me-1"></i> 036 - 413096</span>
+                <span><i class="bi bi-geo-alt-fill text-warning me-1"></i> 321 ต.ทะเลชุบศร อ.เมือง จ.ลพบุรี 15000</span>
+                <span><i class="bi bi-clock-fill text-warning me-1"></i> 08:30 - 16:30 น. (จันทร์ - ศุกร์)</span>
             </div>
             <div class="d-flex gap-3 align-items-center">
                 <a href="https://facebook.com/artcultureTRU99" target="_blank" title="Facebook Page"><i class="bi bi-facebook fs-6"></i></a>
                 <a href="mailto:thepsatriculture@lawasri.tru.ac.th" title="Send Email"><i class="bi bi-envelope-fill fs-6"></i></a>
                 <span class="opacity-25">|</span>
-                <span class="fw-bold text-white">TH</span>
+                <span class="fw-bold text-white" style="font-size: 0.85rem !important;">TH</span>
             </div>
         </div>
     </div>
@@ -208,8 +248,8 @@
             <a class="navbar-brand d-flex align-items-center gap-2.5" href="{{ url('/') }}">
                 <img src="{{ asset('assets/images/logo-tru-culture.png') }}" alt="สำนักศิลปะและวัฒนธรรม มรภ.เทพสตรี" class="me-2" style="max-height: 52px;">
                 <div>
-                    <div class="fs-6 fw-bold text-dark lh-1">สำนักศิลปะและวัฒนธรรม</div>
-                    <div style="font-size: 0.75rem; color: var(--tru-purple);" class="fw-semibold">มหาวิทยาลัยราชภัฏเทพสตรี</div>
+                    <div class="fw-bold text-dark lh-1">สำนักศิลปะและวัฒนธรรม</div>
+                    <div style="color: var(--tru-purple);" class="fw-semibold">มหาวิทยาลัยราชภัฏเทพสตรี</div>
                 </div>
             </a>
 
@@ -287,10 +327,10 @@
                     <h5 class="footer-heading">ติดต่อเรา</h5>
                     <p class="fw-bold text-white mb-2">สำนักศิลปะและวัฒนธรรม มหาวิทยาลัยราชภัฏเทพสตรี</p>
                     <ul class="footer-links">
-                        <li class="d-flex gap-2"><i class="bi bi-geo-alt-fill text-warning"></i> 321 ตำบลทะเลชุบศร อำเภอเมือง จังหวัดลพบุรี 15000</li>
-                        <li class="d-flex gap-2"><i class="bi bi-telephone-fill text-warning"></i> 036 - 413096</li>
-                        <li class="d-flex gap-2"><i class="bi bi-envelope-fill text-warning"></i> thepsatriculture@lawasri.tru.ac.th</li>
-                        <li class="d-flex gap-2"><i class="bi bi-facebook text-warning"></i> Facebook: artcultureTRU99</li>
+                        <li class="d-flex gap-2"><i class="bi bi-geo-alt-fill text-warning"></i> <span>321 ตำบลทะเลชุบศร อำเภอเมือง จังหวัดลพบุรี 15000</span></li>
+                        <li class="d-flex gap-2"><i class="bi bi-telephone-fill text-warning"></i> <span>036 - 413096</span></li>
+                        <li class="d-flex gap-2"><i class="bi bi-envelope-fill text-warning"></i> <span>thepsatriculture@lawasri.tru.ac.th</span></li>
+                        <li class="d-flex gap-2"><i class="bi bi-facebook text-warning"></i> <span>Facebook: artcultureTRU99</span></li>
                     </ul>
                 </div>
 
@@ -317,13 +357,13 @@
 
             <!-- Copyright -->
             <div class="pt-4 border-top border-secondary border-opacity-25 text-center text-xs opacity-75">
-                <p class="mb-0">&copy; 2026 สำนักศิลปะและวัฒนธรรม มหาวิทยาลัยราชภัฏเทพสตรี. สงวนลิขสิทธิ์ทั้งหมด.</p>
+                <p class="mb-0" style="font-size: 0.85rem !important;">&copy; {{ date('Y') }} สำนักศิลปะและวัฒนธรรม มหาวิทยาลัยราชภัฏเทพสตรี. สงวนลิขสิทธิ์ทั้งหมด.</p>
             </div>
         </div>
     </footer>
 
-    <!-- Bootstrap 5.3 JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap 5.3 JS Bundle (Local Vendor) -->
+    <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     @stack('scripts')
 </body>
 </html>

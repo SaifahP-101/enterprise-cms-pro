@@ -15,7 +15,13 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        // ⏰ สั่งรัน Offsite Backup ทุกวันในเวลา 02:00 น.
+        // - withoutOverlapping(): ป้องกันการรันซ้อนหากงานเก่ายังไม่เสร็จ
+        // - onOneServer(): รันเฉพาะบน Server เครื่องเดียวในกรณีทำ Multi-server Load Balancer
+        $schedule->command('cms:backup-offsite')
+            ->dailyAt('02:00')
+            ->withoutOverlapping()
+            ->onOneServer();
     }
 
     /**
