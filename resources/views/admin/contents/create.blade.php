@@ -146,7 +146,7 @@
                     </div>
 
                     <!-- 🔖 แท็กคีย์เวิร์ดพร้อมปุ่มเพิ่มสด (Dynamic Inline CRUD) -->
-                    <div class="mb-3">
+                    <div class="mb-0">
                         <label class="form-label small fw-bold text-secondary">แท็กคีย์เวิร์ดคัดกรองข้อมูล (Select2 มัลติเซเลกต์)</label>
                         <div class="input-group flex-nowrap">
                             <select name="tags[]" id="inlineCrudSelect2" class="form-select" multiple="multiple" style="width: 75%">
@@ -158,16 +158,6 @@
                             </select>
                             <button type="button" class="btn btn-dark fw-bold px-2 shadow-2xs" id="btnQuickCreateTag" style="width: 25%; font-size: 0.8rem;">+ เพิ่มแท็ก</button>
                         </div>
-                    </div>
-
-                    <div class="mb-0">
-                        <label class="form-label small fw-bold text-secondary">ประเภทเนื้อหาหลัก</label>
-                        <select name="type" class="form-select select2-noclose" style="width: 100%" required>
-                            <option value="NEWS" {{ old('type', 'NEWS') == 'NEWS' ? 'selected' : '' }}>ข่าวประชาสัมพันธ์</option>
-                            <option value="ARTICLE" {{ old('type') == 'ARTICLE' ? 'selected' : '' }}>บทความวิชาการ</option>
-                            <option value="NEWSLETTER" {{ old('type') == 'NEWSLETTER' ? 'selected' : '' }}>จดหมายข่าว</option>
-                            <option value="RESEARCH" {{ old('type') == 'RESEARCH' ? 'selected' : '' }}>งานวิจัย/สิ่งพิมพ์</option>
-                        </select>
                     </div>
                 </div>
 

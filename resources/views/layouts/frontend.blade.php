@@ -357,13 +357,17 @@
 
             <!-- Copyright -->
             <div class="pt-4 border-top border-secondary border-opacity-25 text-center text-xs opacity-75">
-                <p class="mb-0" style="font-size: 0.85rem !important;">&copy; {{ date('Y') }} สำนักศิลปะและวัฒนธรรม มหาวิทยาลัยราชภัฏเทพสตรี. สงวนลิขสิทธิ์ทั้งหมด.</p>
+                <p class="mb-0" style="font-size: 0.85rem !important;">&copy; {{ date('Y') }} สำนักศิลปะและวัฒนธรรม มหาวิทยาลัยราชภัฏเทพสตรี. สงวนลิขสิทธิ์ทั้งหมด.  
+                    <a href="{{ route('login') }}" target="_blank"><b> Login </b></a>
+                </p>
+                
             </div>
         </div>
     </footer>
 
     <!-- Bootstrap 5.3 JS Bundle (Local Vendor) -->
     <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script id="becookies.tech-scripts" src="https://cookies.tru.ac.th/script.js" data-id="682d0028a6c69ed23bfa108f" charset="utf-8"></script>
     @stack('scripts')
 </body>
 </html>

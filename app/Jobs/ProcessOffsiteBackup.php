@@ -3,20 +3,25 @@
 namespace App\Jobs;
 
 use App\Models\AuditLog;
+use App\Models\BackupSyncedFile;
 use Exception;
+use Ifsnop\Mysqldump\Mysqldump;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use ZipArchive;
 
 class ProcessOffsiteBackup implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $timeout = 3600;
+    // ขยายเวลาให้ Job ทำงานได้สูงสุด 2 ชั่วโมง ป้องกัน Timeout
+    public int $timeout = 7200; 
     public int $tries = 1;
 
     protected ?int $triggeredByUserId;
@@ -28,63 +33,55 @@ class ProcessOffsiteBackup implements ShouldQueue
 
     public function handle(): void
     {
-        Log::info('📦 [Offsite Backup Engine] เริ่มต้นกระบวนการสำรองข้อมูลขึ้น Google Drive (Flat Upload Strategy)...');
+        Log::info('📦 [Offsite Backup Engine] เริ่มกระบวนการสำรองข้อมูล (Directory-based Zipped Differential)...');
+        $this->updateProgress('กำลังเตรียมการสำรองข้อมูล...', 'ระบบกำลังจัดเตรียม Temp Folder และเชื่อมต่อ Google Drive');
+
+        $timestamp = date('Y-m-d_H-i-s');
+        $tempDir = storage_path('app/backups');
+        
+        if (!file_exists($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+
+        $sqlFileName = "db_{$timestamp}.sql";
+        $sqlLocalPath = "{$tempDir}/{$sqlFileName}";
 
         try {
-            // 🛡️ 1. สำรองข้อมูลฐานข้อมูล MySQL (.sql.gz) ยิงตรงเข้า Root Folder
-            $dbStatus = $this->backupDatabase();
+            // Step 1 & 2: จัดการฐานข้อมูล
+            $this->dumpDatabase($sqlLocalPath);
+            $this->uploadDatabase($sqlLocalPath, $sqlFileName);
 
-            // 🛡️ 2. สำรองข้อมูลไฟล์สื่อแบบ Smart Incremental (แปลงชื่อไฟล์ป้องกัน Subfolder Bug)
-            $mediaStatus = $this->syncMediaFiles();
+            // Step 3: ประมวลผล Media แบบแยกก้อนตามโฟลเดอร์
+            $syncResult = $this->syncMediaFiles($tempDir, $timestamp);
 
-            $summary = sprintf(
-                "สำรองข้อมูลสำเร็จ | DB Status: %s | Media Sync: Uploaded %d files, Skipped %d files",
-                $dbStatus,
-                $mediaStatus['uploaded'],
-                $mediaStatus['skipped']
-            );
+            // Step 4: คืนพื้นที่ดิสก์ Local
+            @unlink($sqlLocalPath);
 
+            $summary = "สำรองข้อมูลสำเร็จ | ดัมพ์ Database เรียบร้อย | Media: อัปโหลด Zip ใหม่ {$syncResult['uploaded']} ไฟล์ (ข้าม {$syncResult['skipped']} ไฟล์)";
             Log::info("✅ [Offsite Backup Engine] {$summary}");
             $this->recordAuditLog('SUCCESS', $summary);
+
+            $this->updateProgress('สำรองข้อมูลเสร็จสมบูรณ์ 🎉', $summary, false, 'SUCCESS');
 
         } catch (Exception $e) {
             $errorMessage = 'การสำรองข้อมูลล้มเหลว: ' . $e->getMessage();
             Log::error("🚨 [Offsite Backup Engine Error] {$errorMessage}");
-
+            
+            @unlink($sqlLocalPath);
             $this->recordAuditLog('FAILED', $errorMessage);
+            $this->updateProgress('เกิดข้อผิดพลาดระหว่างกระบวนการ!', $errorMessage, false, 'FAILED');
+
             throw $e;
         }
     }
 
     /**
-     * 🗄️ PART 1: สำรองข้อมูล Database (.sql.gz)
+     * ดัมพ์ฐานข้อมูลด้วย Pure PHP (ifsnop/mysqldump-php)
      */
-    protected function backupDatabase(): string
+    protected function dumpDatabase(string $localTempPath): void
     {
-        $todayDate = date('Y-m-d');
-        $fileName = "db_backup_{$todayDate}.sql.gz";
-        
-        // ⚡ อัปโหลดตรงเข้า Root Folder (ไม่ใส่คำว่า databases/ นำหน้า เพื่อหลีกเลี่ยง 404 Bug)
-        $drivePath = $fileName; 
-        
-        $localTempDir = storage_path('app/backups');
-        $localTempPath = "{$localTempDir}/{$fileName}";
-        $googleDisk = Storage::disk('google');
-
-        try {
-            if ($googleDisk->exists($drivePath)) {
-                Log::info("⏩ [DB Backup Skipped] พบไฟล์ {$drivePath} บน Google Drive แล้ว");
-                return 'SKIPPED (Already Exists)';
-            }
-        } catch (Exception $e) {
-            // Ignore error and proceed to upload
-        }
-
-        if (!file_exists($localTempDir)) {
-            mkdir($localTempDir, 0755, true);
-        }
-
-        Log::info("⚙️ [DB Backup] กำลังดัมพ์ฐานข้อมูลด้วย mysqldump: {$fileName}...");
+        $this->updateProgress('กำลังดัมพ์ฐานข้อมูล (Step 1/3)', 'กำลังแปลงข้อมูลเป็นไฟล์ SQL...');
+        Log::info("⚙️ [Step 1] กำลังดัมพ์ฐานข้อมูล...");
 
         $dbHost = config('database.connections.mysql.host');
         $dbPort = config('database.connections.mysql.port', '3306');
@@ -92,109 +89,205 @@ class ProcessOffsiteBackup implements ShouldQueue
         $dbUser = config('database.connections.mysql.username');
         $dbPass = config('database.connections.mysql.password');
 
-        // ใช้ --no-tablespaces เพื่อป้องกันปัญหาสิทธิ์ PROCESS
-        $command = sprintf(
-            'mysqldump --single-transaction --quick --no-tablespaces --host=%s --port=%s --user=%s --password=%s %s | gzip > %s',
-            escapeshellarg($dbHost),
-            escapeshellarg($dbPort),
-            escapeshellarg($dbUser),
-            escapeshellarg($dbPass),
-            escapeshellarg($dbName),
-            escapeshellarg($localTempPath)
-        );
+        try {
+            $dsn = "mysql:host={$dbHost};port={$dbPort};dbname={$dbName}";
+            $dumpSettings = ['add-drop-table' => true, 'skip-definer' => true, 'skip-triggers' => false];
+            $dump = new Mysqldump($dsn, $dbUser, $dbPass, $dumpSettings);
+            $dump->start($localTempPath);
 
-        $returnVar = null;
-        $output = [];
-        exec($command, $output, $returnVar);
+            if (!file_exists($localTempPath) || filesize($localTempPath) === 0) {
+                throw new Exception("ไฟล์ SQL ที่ดัมพ์ออกมามีขนาด 0 Byte");
+            }
+        } catch (Exception $e) {
+            throw new Exception("ดัมพ์ฐานข้อมูลล้มเหลว: " . $e->getMessage());
+        }
+    }
 
-        if ($returnVar !== 0 || !file_exists($localTempPath) || filesize($localTempPath) === 0) {
-            throw new Exception("คำสั่ง mysqldump ทำงานล้มเหลว (Exit Code: {$returnVar})");
+    /**
+     * อัปโหลดไฟล์ Database แบบ Streaming
+     */
+    protected function uploadDatabase(string $localPath, string $fileName): void
+    {
+        $this->updateProgress('กำลังอัปโหลดฐานข้อมูล (Step 2/3)', "กำลัง Streaming ไฟล์ {$fileName}...");
+        Log::info("☁️ [Step 2] กำลังอัปโหลดไฟล์ Database: {$fileName}...");
+        
+        $googleDisk = Storage::disk('google');
+        $fileStream = fopen($localPath, 'r+');
+        
+        if (!$fileStream) {
+            throw new Exception("ไม่สามารถเปิด Stream เพื่ออ่านไฟล์ SQL ได้");
         }
 
-        Log::info("☁️ [DB Backup] กำลัง Stream Upload {$fileName} ขึ้น Google Drive...");
-        $fileStream = fopen($localTempPath, 'r+');
-        $googleDisk->put($drivePath, $fileStream);
+        $googleDisk->put($fileName, $fileStream);
         
         if (is_resource($fileStream)) {
             fclose($fileStream);
         }
-
-        if (file_exists($localTempPath)) {
-            unlink($localTempPath);
-        }
-
-        return 'UPLOADED_SUCCESSFULLY';
     }
 
     /**
-     * 📁 PART 2: Smart Incremental Media Sync
+     * ⚡ Directory-based Zipped Differential Media Sync
+     * สร้างไฟล์ Zip 1 ก้อน ต่อ 1 โฟลเดอร์ (ลดปัญหาไฟล์ใหญ่เกินไปอย่างเป็นธรรมชาติ)
      */
-    protected function syncMediaFiles(): array
+    protected function syncMediaFiles(string $tempDir, string $timestamp): array
     {
-        Log::info('🔍 [Media Sync] เริ่มสแกนไฟล์ใน storage/app/public/...');
+        $this->updateProgress('กำลังเปรียบเทียบไฟล์ Media (Step 3/3)', 'กำลังสแกนและแยกก้อน Zip ตามโฟลเดอร์...');
+        Log::info("🗂️ [Step 3] เริ่มกระบวนการ Zipped Media Sync (แบ่งก้อนตามโฟลเดอร์)...");
 
-        $localPublicDisk = Storage::disk('public');
+        $publicDisk = Storage::disk('public');
         $googleDisk = Storage::disk('google');
-        $allLocalFiles = $localPublicDisk->allFiles();
+        
+        $targetDirectories = [
+            'contents/covers', 
+            'contents/galleries', 
+            'contents/inline_images',
+            'pages/inline_images', 
+            'popups', 
+            'slideshows'
+        ];
 
-        $uploadedCount = 0;
-        $skippedCount = 0;
+        $totalSkippedCount = 0;
+        $totalUploadedCount = 0;
 
-        foreach ($allLocalFiles as $relativePath) {
-            if (strpos(basename($relativePath), '.') === 0) {
-                continue;
-            }
+        // วนลูปทำงานทีละโฟลเดอร์
+        foreach ($targetDirectories as $directory) {
+            $files = $publicDisk->allFiles($directory);
+            $filesToUpdateInDb = [];
+            
+            // แปลงชื่อโฟลเดอร์ให้ปลอดภัยสำหรับตั้งเป็นชื่อไฟล์ (เช่น contents/covers -> contents_covers)
+            $safeDirName = str_replace('/', '_', $directory);
+            $zipFileName = "media_diff_{$timestamp}_{$safeDirName}.zip";
+            $zipFilePath = "{$tempDir}/{$zipFileName}";
+            
+            $zip = new ZipArchive();
+            $isZipOpened = false; // ตัวแปรเช็กว่ามีการสร้างไฟล์ Zip สำหรับโฟลเดอร์นี้หรือยัง
 
-            // ⚡ แปลงชื่อไฟล์และไดเรกทอรีให้แบนราบ (Flat Name) เช่น images/cover.jpg -> media_images_cover.jpg
-            $safeName = str_replace('/', '_', $relativePath);
-            $driveTargetPath = "media_{$safeName}";
+            foreach ($files as $relativePath) {
+                if (strpos(basename($relativePath), '.') === 0) continue; 
 
-            try {
-                if ($googleDisk->exists($driveTargetPath)) {
-                    $skippedCount++;
+                $absolutePath = $publicDisk->path($relativePath);
+                $currentFileHash = md5_file($absolutePath);
+                $syncedRecord = BackupSyncedFile::where('file_path', $relativePath)->first();
+
+                // ข้ามไฟล์ที่ซ้ำ
+                if ($syncedRecord && $syncedRecord->file_hash === $currentFileHash) {
+                    $totalSkippedCount++;
                     continue;
                 }
-            } catch (Exception $e) {
-                // Ignore exists failure and upload
+
+                // หากเป็นไฟล์ใหม่ และยังไม่ได้เปิด Zip ให้สร้างไฟล์ Zip ขึ้นมา
+                if (!$isZipOpened) {
+                    if ($zip->open($zipFilePath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+                        throw new Exception("ไม่สามารถสร้างไฟล์ Zip: {$zipFilePath}");
+                    }
+                    $isZipOpened = true;
+                }
+
+                $zip->addFile($absolutePath, $relativePath);
+                $filesToUpdateInDb[] = [
+                    'file_path' => $relativePath,
+                    'file_hash' => $currentFileHash
+                ];
             }
 
-            $fileStream = $localPublicDisk->readStream($relativePath);
-            if ($fileStream) {
-                $googleDisk->put($driveTargetPath, $fileStream);
+            // เมื่อสแกนโฟลเดอร์จบ หากมีการนำไฟล์เข้า Zip ให้ทำการปิดไฟล์และอัปโหลด
+            if ($isZipOpened) {
+                $zip->close();
                 
-                if (is_resource($fileStream)) {
-                    fclose($fileStream);
-                }
+                $this->uploadZipDirectory($zipFilePath, $zipFileName, $googleDisk, $directory);
+                $this->commitHashesToDatabase($filesToUpdateInDb);
                 
-                $uploadedCount++;
-                Log::info("⬆️ [Media Sync Uploaded] {$driveTargetPath}");
+                $totalUploadedCount += count($filesToUpdateInDb);
+                @unlink($zipFilePath); // คืนพื้นที่ทันทีหลังอัปโหลดเสร็จ
+
+                // 🛡️ หน่วงเวลา 2 วินาที ป้องกัน Google Drive API แบนจากการอัปโหลดไฟล์ติดๆ กัน
+                sleep(2);
             }
         }
 
         return [
-            'uploaded' => $uploadedCount,
-            'skipped'  => $skippedCount,
+            'uploaded' => $totalUploadedCount,
+            'skipped'  => $totalSkippedCount
         ];
     }
 
+    /**
+     * Helper: อัปโหลดไฟล์ Zip ประจำโฟลเดอร์
+     */
+    protected function uploadZipDirectory(string $zipFilePath, string $zipFileName, $googleDisk, string $directory): void
+    {
+        $this->updateProgress("กำลังอัปโหลดโฟลเดอร์ {$directory}", "กำลังอัปโหลดไฟล์ {$zipFileName}...");
+        Log::info("📦 [Step 3] กำลังอัปโหลด Zip ประจำโฟลเดอร์ ({$directory}): {$zipFileName}...");
+
+        $fileStream = fopen($zipFilePath, 'r+');
+        if ($fileStream) {
+            $googleDisk->put($zipFileName, $fileStream); 
+            
+            fclose($fileStream);
+        } else {
+            throw new Exception("ไม่สามารถเปิดอ่านไฟล์ Zip {$zipFileName} เพื่ออัปโหลดได้");
+        }
+    }
+
+    /**
+     * Helper: บันทึกประวัติ Hash ลงฐานข้อมูล
+     */
+    protected function commitHashesToDatabase(array $filesToUpdateInDb): void
+    {
+        foreach ($filesToUpdateInDb as $fileData) {
+            BackupSyncedFile::updateOrCreate(
+                ['file_path' => $fileData['file_path']],
+                ['file_hash' => $fileData['file_hash']]
+            );
+        }
+    }
+
+    /**
+     * บันทึก Audit Log
+     */
     protected function recordAuditLog(string $status, string $details): void
     {
         try {
             AuditLog::create([
-                'user_id'    => $this->triggeredByUserId,
-                'model_type' => self::class,
-                'model_id'   => 0,
-                'action'     => 'OFFSITE_BACKUP_' . $status,
-                'old_values' => null,
-                'new_values' => json_encode([
+                'user_id'        => $this->triggeredByUserId,
+                'auditable_type' => self::class, 
+                'auditable_id'   => 0,           
+                'action'         => 'OFFSITE_BACKUP_' . $status,
+                'old_values'     => null,
+                'new_values'     => [
                     'trigger_type' => $this->triggeredByUserId ? 'MANUAL' : 'CRON_SCHEDULED',
                     'details'      => $details,
-                ], JSON_UNESCAPED_UNICODE),
-                'ip_address' => request()->ip() ?? '127.0.0.1',
-                'user_agent' => request()->userAgent() ?? 'Laravel CLI / Queue Worker',
+                ],
+                'ip_address'     => request()->ip() ?? '127.0.0.1',
+                'user_agent'     => 'Laravel Worker Engine',
             ]);
         } catch (Exception $e) {
             Log::warning('ไม่สามารถบันทึก AuditLog แบ็กอัปได้: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * อัปเดตสถานะขึ้น Cache แบบ Real-time
+     */
+    protected function updateProgress(string $message, string $details = '', bool $isRunning = true, string $status = 'RUNNING'): void
+    {
+        Cache::put('offsite_backup_status', [
+            'is_running' => $isRunning,
+            'status'     => $status,
+            'message'    => $message,
+            'details'    => $details
+        ], 7200);
+    }
+
+    /**
+     * 🚨 ดักจับ Error ขั้นรุนแรง (เช่น Timeout หรือ Out of Memory)
+     */
+    public function failed(\Throwable $exception)
+    {
+        $errorMessage = 'Queue Worker ล้มเหลวฉุกเฉิน: ' . $exception->getMessage();
+        Log::emergency("💀 [Offsite Backup Engine DEAD] {$errorMessage}");
+        
+        $this->updateProgress('ระบบหยุดทำงานกะทันหัน!', $errorMessage, false, 'FAILED');
+        $this->recordAuditLog('FATAL_ERROR', $errorMessage);
     }
 }

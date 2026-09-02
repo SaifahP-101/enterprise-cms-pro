@@ -11,7 +11,7 @@ class Slideshow extends Model
     use HasAuditLogs; 
 
     protected $fillable = [
-        'title', 'image_path', 'link_url', 'sort_order', 'is_active'
+        'title', 'subtitle', 'image_path', 'link_url', 'sort_order', 'is_active'
     ];
 
     /**

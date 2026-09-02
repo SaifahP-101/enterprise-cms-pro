@@ -244,10 +244,18 @@
                                         </small>
                                     </div>
                                 </div>
-                                <div class="d-flex justify-content-between align-items-center pt-1 border-top border-danger border-opacity-10 mt-1">
+                                <div class="d-flex justify-content-between align-items-center pt-2 border-top border-danger border-opacity-10 mt-1">
                                     <span class="badge bg-danger rounded-pill px-2 py-0.5 font-body" style="font-size: 0.65rem;">
                                         <i class="bi bi-shield-lock-fill me-0.5"></i> Secure Vault Protected
                                     </span>
+                                    <div class="d-flex gap-1">
+                                        <a href="{{ route('secure.pdf.stream', ['filename' => basename($page->secure_pdf_path)]) }}" target="_blank" class="btn btn-xs btn-outline-dark px-2 py-0.5 fw-bold font-body" style="font-size: 0.7rem;">
+                                            <i class="bi bi-eye"></i> เปิดอ่าน
+                                        </a>
+                                        <button type="button" class="btn btn-xs btn-outline-danger px-2 py-0.5 fw-bold font-body btn-delete-pdf-trigger" data-form-id="deletePagePdfForm" style="font-size: 0.7rem;">
+                                            <i class="bi bi-trash3"></i> ลบไฟล์
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         @endif
@@ -298,6 +306,14 @@
         </div>
     </form>
 </div>
+
+@if($page->secure_pdf_path)
+    <!-- 🗑️ Hidden Form สำหรับลบ PDF ของหน้าเพจ -->
+    <form id="deletePagePdfForm" action="{{ route('admin.pages.remove_pdf', $page->id) }}" method="POST" class="d-none">
+        @csrf
+        @method('DELETE')
+    </form>
+@endif
 @endsection
 
 @push('admin_scripts')
@@ -365,6 +381,26 @@
                     });
                 }).catch(error => console.error('CKEditor Init Error:', error));
             }
+        });
+
+        // 2. ปุ่มลบไฟล์ PDF เอกสารสำคัญ
+        $(document).on('click', '.btn-delete-pdf-trigger', function(e) {
+            e.preventDefault();
+            var formId = $(this).data('form-id');
+            Swal.fire({
+                title: 'ยืนยันการลบไฟล์เอกสาร PDF?',
+                text: 'ไฟล์จะถูกลบออกจากดิสก์และระบบอย่างถาวร!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-trash3 me-1"></i> ยืนยันลบไฟล์',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('#' + formId).submit();
+                }
+            });
         });
     });
 </script>

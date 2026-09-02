@@ -150,7 +150,7 @@
                     </div>
 
                     <!-- 🔖 แท็กคีย์เวิร์ด Inline CRUD -->
-                    <div class="mb-3">
+                    <div class="mb-0">
                         <label class="form-label small fw-bold text-secondary">แท็กคีย์เวิร์ดคัดกรองข้อมูล</label>
                         <div class="input-group flex-nowrap">
                             <select name="tags[]" id="inlineCrudSelect2" class="form-select" multiple="multiple" style="width: 75%">
@@ -165,16 +165,6 @@
                             </select>
                             <button type="button" class="btn btn-dark fw-bold px-2 shadow-2xs" id="btnQuickCreateTag" style="width: 25%; font-size: 0.8rem;">+ เพิ่มแท็ก</button>
                         </div>
-                    </div>
-
-                    <div class="mb-0">
-                        <label class="form-label small fw-bold text-secondary">ประเภทเนื้อหาหลัก</label>
-                        <select name="type" class="form-select select2-noclose" style="width: 100%" required>
-                            <option value="NEWS" {{ old('type', $content->type) == 'NEWS' ? 'selected' : '' }}>ข่าวประชาสัมพันธ์</option>
-                            <option value="ARTICLE" {{ old('type', $content->type) == 'ARTICLE' ? 'selected' : '' }}>บทความวิชาการ</option>
-                            <option value="NEWSLETTER" {{ old('type', $content->type) == 'NEWSLETTER' ? 'selected' : '' }}>จดหมายข่าว</option>
-                            <option value="RESEARCH" {{ old('type', $content->type) == 'RESEARCH' ? 'selected' : '' }}>งานวิจัย/สิ่งพิมพ์</option>
-                        </select>
                     </div>
                 </div>
 
@@ -204,8 +194,11 @@
                         <label class="form-label small fw-bold text-danger"><i class="bi bi-folder"></i> อัปเดตไฟล์เอกสาร PDF สำคัญ (ไม่เกิน 30 MB)</label>
                         @if($content->secure_pdf_path)
                             <div class="mb-2 p-2 bg-light rounded border d-flex justify-content-between align-items-center shadow-3xs">
-                                <span class="small text-truncate text-muted" style="max-width: 180px;"><i class="bi bi-file-earmark-text"></i> {{ basename($content->secure_pdf_path) }}</span>
-                                <a href="{{ route('secure.pdf.stream', ['filename' => basename($content->secure_pdf_path)]) }}" target="_blank" class="btn btn-xs btn-outline-dark px-2 py-0.5 fw-bold" style="font-size: 0.7rem;">เปิดอ่าน</a>
+                                <span class="small text-truncate text-muted" style="max-width: 150px;" title="{{ basename($content->secure_pdf_path) }}"><i class="bi bi-file-earmark-text text-danger"></i> {{ basename($content->secure_pdf_path) }}</span>
+                                <div class="d-flex gap-1">
+                                    <a href="{{ route('secure.pdf.stream', ['filename' => basename($content->secure_pdf_path)]) }}" target="_blank" class="btn btn-xs btn-outline-dark px-2 py-0.5 fw-bold" style="font-size: 0.7rem;"><i class="bi bi-eye"></i> เปิดอ่าน</a>
+                                    <button type="button" class="btn btn-xs btn-outline-danger px-2 py-0.5 fw-bold btn-delete-pdf-trigger" data-form-id="deletePdfForm" style="font-size: 0.7rem;"><i class="bi bi-trash3"></i> ลบไฟล์</button>
+                                </div>
                             </div>
                         @endif
                         <input type="file" name="secure_pdf" class="form-control form-control-sm shadow-3xs" accept="application/pdf">
@@ -273,6 +266,14 @@
         </div>
     </div>
 </div>
+
+@if($content->secure_pdf_path)
+    <!-- 🗑️ Hidden Form สำหรับลบ PDF -->
+    <form id="deletePdfForm" action="{{ route('admin.contents.remove_pdf', $content->id) }}" method="POST" class="d-none">
+        @csrf
+        @method('DELETE')
+    </form>
+@endif
 @endsection
 
 @push('admin_scripts')
@@ -502,6 +503,26 @@
                             }
                         }
                     });
+                }
+            });
+        });
+
+        // 6. ปุ่มลบไฟล์ PDF เอกสารสำคัญ
+        $(document).on('click', '.btn-delete-pdf-trigger', function(e) {
+            e.preventDefault();
+            var formId = $(this).data('form-id');
+            Swal.fire({
+                title: 'ยืนยันการลบไฟล์เอกสาร PDF?',
+                text: 'ไฟล์จะถูกลบออกจากดิสก์และระบบอย่างถาวร!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-trash3 me-1"></i> ยืนยันลบไฟล์',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('#' + formId).submit();
                 }
             });
         });

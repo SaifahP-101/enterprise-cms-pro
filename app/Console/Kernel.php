@@ -13,15 +13,21 @@ class Kernel extends ConsoleKernel
      * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
      * @return void
      */
+    
+    protected $commands = [
+        // ลงทะเบียน Command
+        \App\Console\Commands\BackupOffsiteCommand::class,
+    ];
+
     protected function schedule(Schedule $schedule)
     {
-        // ⏰ สั่งรัน Offsite Backup ทุกวันในเวลา 02:00 น.
-        // - withoutOverlapping(): ป้องกันการรันซ้อนหากงานเก่ายังไม่เสร็จ
-        // - onOneServer(): รันเฉพาะบน Server เครื่องเดียวในกรณีทำ Multi-server Load Balancer
+        // ⏰ ทดสอบสั่งรันตอน 11:00 น.
         $schedule->command('cms:backup-offsite')
-            ->dailyAt('02:00')
+            ->dailyAt('11:00') // ⚡ เปลี่ยนเวลาตรงนี้
             ->withoutOverlapping()
-            ->onOneServer();
+            ->onOneServer() // ตอนนี้ใช้ได้แล้วเพราะเราแก้ตาราง cache แล้ว
+            ->timezone('Asia/Bangkok') // บังคับ Timezone ป้องกันเซิร์ฟเวอร์เวลาเพี้ยน
+            ->appendOutputTo(storage_path('logs/backup-schedule.log'));
     }
 
     /**

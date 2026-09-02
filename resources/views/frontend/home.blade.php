@@ -235,6 +235,37 @@
         color: var(--tru-purple-dark);
         transform: translateY(-4px);
     }
+
+    /* ⚡ Mobile Swipeable Cards (Horizontal Scroll สำหรับมุมมองมือถือ) ⚡ */
+    @media (max-width: 767.98px) {
+        .swipeable-row-mobile {
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x mandatory;
+            padding-bottom: 1.5rem; /* เพิ่มพื้นที่สำหรับ Scrollbar */
+        }
+        /* กำหนดขนาดของการ์ดในมือถือให้โผล่ขอบชิ้นต่อไป เพื่อบอกให้รู้ว่าเลื่อนได้ */
+        .swipeable-row-mobile > [class*="col-"] {
+            flex: 0 0 85% !important;
+            max-width: 85% !important;
+            scroll-snap-align: start;
+        }
+        
+        /* ตกแต่ง Scrollbar ให้ดูโมเดิร์น */
+        .swipeable-row-mobile::-webkit-scrollbar {
+            height: 6px;
+        }
+        .swipeable-row-mobile::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+        }
+        .swipeable-row-mobile::-webkit-scrollbar-thumb {
+            background: var(--tru-gold, #D4AF37);
+            border-radius: 10px;
+        }
+    }
 </style>
 @endpush
 
@@ -258,8 +289,7 @@
             @forelse($slideshows ?? [] as $key => $slide)
                 <div class="carousel-item {{ $key == 0 ? 'active' : '' }}" style="height: 500px; background: url('{{ asset('storage/'.$slide->image_path) }}') center/cover no-repeat;">
                     <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center" style="background: linear-gradient(131deg, rgb(0 0 0 / 74%) 0%, rgb(0 0 0 / 21%) 71%);">
-                        <div class="container text-white">
-                            <span class="badge bg-warning text-dark mb-2 px-3 py-1.5 font-heading">สำนักศิลปะและวัฒนธรรม</span>
+                        <div class="container text-white text-center">
                             <h1 class="display-5 fw-bold font-heading my-4" style="color: #FFF !important; font-size: 3rem !important;">{{ $slide->title }}</h1>
                             <p class="lead opacity-90 mb-4">{{ $slide->subtitle }}</p>
                             @if($slide->link_url)
@@ -303,7 +333,8 @@
             @endif
         </div>
 
-        <div class="row g-4">
+        <!-- เพิ่มคลาส swipeable-row-mobile ตรงนี้ -->
+        <div class="row g-4 swipeable-row-mobile">
             @forelse($learningResources ?? [] as $resource)
                 <div class="col-md-6 col-lg-3">
                     <div class="news-card position-relative">
@@ -342,7 +373,8 @@
                 @endif
             </div>
 
-            <div class="row g-4">
+            <!-- เพิ่มคลาส swipeable-row-mobile ตรงนี้ -->
+            <div class="row g-4 swipeable-row-mobile">
                 @forelse($activities ?? [] as $act)
                     <div class="col-md-4">
                         <div class="news-card position-relative">
@@ -375,31 +407,32 @@
                 การบริหารจัดการและบริการสารสนเทศของสำนักศิลปะและวัฒนธรรม มหาวิทยาลัยราชภัฏเทพสตรี ครอบคลุมพันธกิจและบริการ 5 ด้าน
             </p>
             
-            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-4 justify-content-center mt-2">
+            <!-- ปรับเป็น row-cols-2 สำหรับหน้าจอมือถือ (xs) ให้เป็น Grid แบบ 2 คอลัมน์ที่สวยงามแทนการเรียงยาว 1 คอลัมน์ -->
+            <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-4 justify-content-center mt-2">
                 <div class="col">
                     <div class="mission-card">
                         <div class="mission-icon"><i class="bi bi-bank2"></i></div>
                         <h5 class="fw-bold font-heading fs-6 mb-2 text-dark">แหล่งเรียนรู้</h5>
-                        <p class="text-muted small mb-0">คลังสารสนเทศประวัติศาสตร์ สถาปัตยกรรม พิพิธภัณฑ์ และแหล่งเรียนรู้ 3 บุรี</p>
-                        <a href="#learning-resources" class="stretched-link"></a>
+                        <p class="text-muted small mb-0 d-none d-md-block">คลังสารสนเทศประวัติศาสตร์ สถาปัตยกรรม พิพิธภัณฑ์ และแหล่งเรียนรู้ 3 บุรี</p>
+                        <a href="{{ route('contents.category', 'three-buri-learning-resources') }}" class="stretched-link"></a>
                     </div>
                 </div>
 
                 <div class="col">
                     <div class="mission-card">
                         <div class="mission-icon"><i class="bi bi-journal-richtext"></i></div>
-                        <h5 class="fw-bold font-heading fs-6 mb-2 text-dark">หนังสือและวารสารสำนักฯ</h5>
-                        <p class="text-muted small mb-0">รวบรวมวารสารวิชาการ เอกสารเผยแพร่ และสิ่งพิมพ์สตรีมมิ่งออนไลน์</p>
-                        <a href="#publications" class="stretched-link"></a>
+                        <h5 class="fw-bold font-heading fs-6 mb-2 text-dark">หนังสือและวารสาร</h5>
+                        <p class="text-muted small mb-0 d-none d-md-block">รวบรวมวารสารวิชาการ เอกสารเผยแพร่ และสิ่งพิมพ์สตรีมมิ่งออนไลน์</p>
+                        <a href="{{ route('contents.category', 'books-and-journals') }}" class="stretched-link"></a>
                     </div>
                 </div>
 
                 <div class="col">
                     <div class="mission-card">
                         <div class="mission-icon"><i class="bi bi-journal-bookmark-fill"></i></div>
-                        <h5 class="fw-bold font-heading fs-6 mb-2 text-dark">งานวิจัยและบทความ</h5>
-                        <p class="text-muted small mb-0">ผลงานศึกษาวิจัยเชิงลึก บทความวิชาการ และการยกระดับภูมิปัญญาท้องถิ่น</p>
-                        <a href="#researches" class="stretched-link"></a>
+                        <h5 class="fw-bold font-heading fs-6 mb-2 text-dark">งานวิจัยบทความ</h5>
+                        <p class="text-muted small mb-0 d-none d-md-block">ผลงานศึกษาวิจัยเชิงลึก บทความวิชาการ และการยกระดับภูมิปัญญาท้องถิ่น</p>
+                        <a href="{{ route('contents.category', 'research-and-articles') }}" class="stretched-link"></a>
                     </div>
                 </div>
 
@@ -407,17 +440,17 @@
                     <div class="mission-card">
                         <div class="mission-icon"><i class="bi bi-calendar-event-fill"></i></div>
                         <h5 class="fw-bold font-heading fs-6 mb-2 text-dark">โครงการกิจกรรม</h5>
-                        <p class="text-muted small mb-0">โครงการทำนุบำรุงศิลปวัฒนธรรม และกิจกรรมส่งเสริมการเรียนรู้สู่สังคม</p>
-                        <a href="#activities" class="stretched-link"></a>
+                        <p class="text-muted small mb-0 d-none d-md-block">โครงการทำนุบำรุงศิลปวัฒนธรรม และกิจกรรมส่งเสริมการเรียนรู้สู่สังคม</p>
+                        <a href="{{ route('contents.category', 'projects-and-activities') }}" class="stretched-link"></a>
                     </div>
                 </div>
 
                 <div class="col">
                     <div class="mission-card">
                         <div class="mission-icon"><i class="bi bi-emoji-smile-fill"></i></div>
-                        <h5 class="fw-bold font-heading fs-6 mb-2 text-dark">ความพึงพอใจต่อบริการ</h5>
-                        <p class="text-muted small mb-0">ระบบประเมินความพึงพอใจ และสรุปผลการให้บริการสารสนเทศแก่ผู้ใช้บริการ</p>
-                        <a href="#" data-bs-toggle="modal" data-bs-target="#feedbackModal" class="stretched-link"></a>
+                        <h5 class="fw-bold font-heading fs-6 mb-2 text-dark">ประเมินความพึงพอใจ</h5>
+                        <p class="text-muted small mb-0 d-none d-md-block">ระบบประเมินความพึงพอใจ และสรุปผลการให้บริการสารสนเทศแก่ผู้ใช้บริการ</p>
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#satisfactionSummaryModal" class="stretched-link"></a>
                     </div>
                 </div>
             </div>
@@ -438,7 +471,8 @@
             @endif
         </div>
 
-        <div class="row g-4">
+        <!-- เพิ่มคลาส swipeable-row-mobile ตรงนี้ -->
+        <div class="row g-4 swipeable-row-mobile">
             @forelse($publications ?? [] as $pub)
                 <div class="col-12 col-sm-6 col-md-3">
                     <div class="book-card-container">
@@ -483,7 +517,8 @@
                 @endif
             </div>
 
-            <div class="row g-4">
+            <!-- เพิ่มคลาส swipeable-row-mobile ตรงนี้ -->
+            <div class="row g-4 swipeable-row-mobile">
                 @forelse($researches ?? [] as $research)
                     <div class="col-12 col-sm-6 col-md-3">
                         <div class="book-card-container">
@@ -534,7 +569,8 @@
             @endif
         </div>
 
-        <div class="row g-4">
+        <!-- เพิ่มคลาส swipeable-row-mobile ตรงนี้ -->
+        <div class="row g-4 swipeable-row-mobile">
             @forelse($latestNews ?? [] as $news)
                 <div class="col-md-6 col-lg-4">
                     <div class="news-card position-relative">
@@ -665,7 +701,7 @@
                             </div>
                         </div>
                         <div class="col-sm-5">
-                            <a href="http://localhost:8000/page/%E0%B8%84%E0%B8%B9%E0%B9%88%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B8%9B%E0%B8%A3%E0%B8%B0%E0%B8%8A%E0%B8%B2%E0%B8%8A%E0%B8%99-page-16-D7S2" class="portal-btn">
+                            <a href="/page/%E0%B8%84%E0%B8%B9%E0%B9%88%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B8%9B%E0%B8%A3%E0%B8%B0%E0%B8%8A%E0%B8%B2%E0%B8%8A%E0%B8%99-page-16-D7S2" class="portal-btn">
                                 <i class="bi bi-person-workspace fs-2 text-warning"></i>
                                 <div class="text-start">
                                     <div class="fw-bold">คู่มือประชาชน</div>
@@ -674,6 +710,41 @@
                             </a>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 🌐 11. FACEBOOK PAGE EMBED (สำนักศิลปะและวัฒนธรรม) 🌐 -->
+    <section id="facebook-feed" class="container py-4 mb-5">
+        <div class="card border-0 rounded-4 shadow-sm overflow-hidden bg-white p-4" style="border-top: 4px solid var(--tru-purple-dark) !important;">
+            <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3 text-primary d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <i class="bi bi-facebook fs-3"></i>
+                    </div>
+                    <div>
+                        <span class="section-tag mb-0">Social Media Feed</span>
+                        <h3 class="fw-bold text-dark mb-0 font-heading fs-4">ติดตามข่าวสารผ่าน Facebook Page</h3>
+                    </div>
+                </div>
+                <a href="https://www.facebook.com/artcultureTRU99/" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-box-arrow-up-right"></i> เปิดบน Facebook
+                </a>
+            </div>
+
+            <!-- Responsive Embed Wrapper -->
+            <div class="d-flex justify-content-center">
+                <div class="w-100 overflow-hidden" style="max-width: 500px; min-height: 500px;">
+                    <iframe src="https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2FartcultureTRU99%2F&tabs=timeline&width=500&height=500&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true&appId" 
+                            width="100%" 
+                            height="500" 
+                            style="border:none; overflow:hidden; border-radius:12px;" 
+                            scrolling="no" 
+                            frameborder="0" 
+                            allowfullscreen="true" 
+                            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share">
+                    </iframe>
                 </div>
             </div>
         </div>
@@ -742,6 +813,133 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ⚡ MODAL: สรุปผลความพึงพอใจต่อบริการ (Satisfaction Summary Dashboard) ⚡ -->
+    <div class="modal fade" id="satisfactionSummaryModal" tabindex="-1" aria-labelledby="satisfactionSummaryLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+                <!-- Modal Header: Gradient -->
+                <div class="modal-header p-4 border-0" style="background: linear-gradient(135deg, var(--tru-purple-dark, #4C1D95) 0%, #1E082A 100%); position: relative;">
+                    <div class="position-relative z-index-1">
+                        <h5 class="modal-title fw-bold font-heading text-white mb-1" id="satisfactionSummaryLabel">
+                            <i class="bi bi-bar-chart-line-fill text-warning me-2"></i>สรุปผลความพึงพอใจต่อบริการ
+                        </h5>
+                        <p class="small text-white-50 mb-0">
+                            {{-- ดึงข้อมูลช่วงเวลา ถ้าไม่มีให้แสดง Default --}}
+                            ข้อมูลประเมินผล {{ $satisfactionData->period ?? 'อยู่ระหว่างการรวบรวมข้อมูล' }}
+                        </p>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3 shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                    
+                    <!-- Background Pattern แบบจางๆ -->
+                    <i class="bi bi-emoji-smile-fill position-absolute text-white opacity-10" style="font-size: 8rem; right: -20px; top: -30px;"></i>
+                </div>
+
+                <div class="modal-body p-0 bg-light">
+                    
+                    {{-- Logic คำนวณดาวและข้อความประเมินผล (ป้องกัน Error กรณีไม่มีข้อมูล) --}}
+                    @php
+                        $rating = $satisfactionData->overall_rating ?? 0;
+                        $fullStars = floor($rating); // ดาวเต็ม
+                        $halfStar = ($rating - $fullStars) >= 0.5 ? 1 : 0; // ดาวครึ่งดวง
+                        $emptyStars = 5 - $fullStars - $halfStar; // ดาวว่างเปล่า
+
+                        // คำนวณระดับข้อความ
+                        if ($rating >= 4.5) $levelText = 'ดีเยี่ยม';
+                        elseif ($rating >= 3.5) $levelText = 'ดีมาก';
+                        elseif ($rating >= 2.5) $levelText = 'ดี';
+                        elseif ($rating >= 1.5) $levelText = 'พอใช้';
+                        elseif ($rating > 0) $levelText = 'ต้องปรับปรุง';
+                        else $levelText = 'ยังไม่มีคะแนน';
+                    @endphp
+
+                    <!-- ส่วนที่ 1: คะแนนรวม (Overall Rating) -->
+                    <div class="bg-white p-4 text-center border-bottom">
+                        <h1 class="display-3 fw-bold mb-0" style="color: var(--tru-purple-dark, #4C1D95);">
+                            {{ number_format($rating, 1) }} <span class="fs-4 text-muted fw-normal">/ 5</span>
+                        </h1>
+                        
+                        <!-- Render ดวงดาวอัตโนมัติ ตามคะแนนจริง -->
+                        <div class="text-warning fs-4 mb-2">
+                            @for($i = 0; $i < $fullStars; $i++)
+                                <i class="bi bi-star-fill"></i>
+                            @endfor
+                            
+                            @if($halfStar)
+                                <i class="bi bi-star-half"></i>
+                            @endif
+                            
+                            @for($i = 0; $i < $emptyStars; $i++)
+                                <i class="bi bi-star"></i>
+                            @endfor
+                        </div>
+                        
+                        <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill fw-semibold">
+                            ระดับความพึงพอใจ: {{ $levelText }}
+                        </span>
+                        <p class="text-muted small mt-3 mb-0">
+                            จากผู้เข้าร่วมประเมินทั้งหมด 
+                            <strong class="text-dark">{{ number_format($satisfactionData->total_respondents ?? 0) }}</strong> ท่าน
+                        </p>
+                    </div>
+
+                    <!-- ส่วนที่ 2: แยกตามมิติ (Dimensions Progress Bars) -->
+                    <div class="p-4">
+                        <h6 class="fw-bold text-dark font-heading mb-4 text-center">สัดส่วนความพึงพอใจรายด้าน</h6>
+                        
+                        <!-- ด้านการให้บริการ -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-end mb-1">
+                                <span class="small fw-semibold text-dark"><i class="bi bi-check2-circle text-primary me-1"></i> ด้านกระบวนการ/ขั้นตอนการให้บริการ</span>
+                                <span class="small fw-bold text-primary">{{ $satisfactionData->dimension_service ?? 0 }}%</span>
+                            </div>
+                            <div class="progress" style="height: 10px; border-radius: 10px; background-color: #E2E8F0;">
+                                <div class="progress-bar bg-primary" role="progressbar" 
+                                    style="width: {{ $satisfactionData->dimension_service ?? 0 }}%" 
+                                    aria-valuenow="{{ $satisfactionData->dimension_service ?? 0 }}" 
+                                    aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+
+                        <!-- ด้านบุคลากร -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-end mb-1">
+                                <span class="small fw-semibold text-dark"><i class="bi bi-person-badge text-success me-1"></i> ด้านเจ้าหน้าที่/บุคลากรผู้ให้บริการ</span>
+                                <span class="small fw-bold text-success">{{ $satisfactionData->dimension_staff ?? 0 }}%</span>
+                            </div>
+                            <div class="progress" style="height: 10px; border-radius: 10px; background-color: #E2E8F0;">
+                                <div class="progress-bar bg-success" role="progressbar" 
+                                    style="width: {{ $satisfactionData->dimension_staff ?? 0 }}%" 
+                                    aria-valuenow="{{ $satisfactionData->dimension_staff ?? 0 }}" 
+                                    aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+
+                        <!-- ด้านสถานที่ -->
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between align-items-end mb-1">
+                                <span class="small fw-semibold text-dark"><i class="bi bi-building text-warning me-1"></i> ด้านสถานที่และสิ่งอำนวยความสะดวก</span>
+                                <span class="small fw-bold text-warning" style="color: #D4AF37 !important;">{{ $satisfactionData->dimension_facility ?? 0 }}%</span>
+                            </div>
+                            <div class="progress" style="height: 10px; border-radius: 10px; background-color: #E2E8F0;">
+                                <div class="progress-bar" role="progressbar" 
+                                    style="width: {{ $satisfactionData->dimension_facility ?? 0 }}%; background-color: #D4AF37;" 
+                                    aria-valuenow="{{ $satisfactionData->dimension_facility ?? 0 }}" 
+                                    aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="modal-footer p-3 bg-white border-top justify-content-center">
+                    <p class="small text-muted mb-0">
+                        <i class="bi bi-info-circle me-1"></i> สำนักศิลปะและวัฒนธรรม มุ่งมั่นพัฒนาบริการอย่างต่อเนื่อง
+                    </p>
+                </div>
             </div>
         </div>
     </div>

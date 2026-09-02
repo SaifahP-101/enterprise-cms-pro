@@ -6,12 +6,12 @@
 <div class="container-fluid animate__animated animate__fadeIn">
 
     <!-- 1. ส่วนหัวรายการหลักประจำโมดูลหน้าแดชบอร์ด -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
             <h2 class="h4 mb-1 text-dark fw-bold" style="font-family: 'Kanit', sans-serif;">
                 <i class="bi bi-speedometer2 text-primary me-2"></i>ระบบวิเคราะห์และติดตามผลสัมฤทธิ์สารสนเทศ
             </h2>
-            <p class="text-muted small mb-0">มอนิเตอร์ดัชนีชี้วัดทราฟฟิก ยอดการส่งต่อโซเชียล ยอดดาวน์โหลดเอกสาร และประสิทธิภาพรายบทความแยกตัวกรองอิสระ</p>
+            <p class="text-muted small mb-0">มอนิเตอร์ดัชนีชี้วัดทราฟฟิก ยอดการส่งต่อโซเชียล ยอดดาวน์โหลดเอกสาร และสถิติการยืมอุปกรณ์แบบเรียลไทม์</p>
         </div>
     </div>
 
@@ -27,7 +27,7 @@
                         <i class="bi bi-building-columns text-warning me-2"></i>สำนักศิลปะและวัฒนธรรม มหาวิทยาลัยราชภัฏเทพสตรี ลพบุรี
                     </h3>
                     <p class="mb-0 text-white-50" style="font-size: 0.95rem; line-height: 1.6;">
-                        ยกระดับการวิเคราะห์ข้อมูลด้วย <strong>แผงควบคุมสถิติอัจฉริยะ (Smart Analytics Dashboard)</strong> ที่ผสานระบบตัวกรองขั้นสูงแยกอิสระในแต่ละส่วนประกอบ ช่วยให้ท่านสามารถเจาะลึกผลสัมฤทธิ์ของสารสนเทศได้อย่างแม่นยำ รวดเร็ว และคงความน่าเชื่อถือของข้อมูลสูงสุด
+                        ยกระดับการวิเคราะห์ข้อมูลด้วย <strong>แผงควบคุมสถิติอัจฉริยะ (Smart Analytics Dashboard)</strong> ที่ผสานระบบตัวกรองขั้นสูงแยกอิสระในแต่ละส่วนประกอบ ช่วยให้ท่านสามารถเจาะลึกผลสัมฤทธิ์ของสารสนเทศและการให้บริการยืมครุภัณฑ์ได้อย่างแม่นยำ รวดเร็ว และคงความน่าเชื่อถือของข้อมูลสูงสุด
                     </p>
                 </div>
             </div>
@@ -35,6 +35,7 @@
     </div>
 
     <!-- 3. แผงควบคุมกล่องการ์ดสรุปแต้มสะสมภาพรวมหลัก (Global System Stats Cards) -->
+    <h5 class="fw-bold text-dark mb-3" style="font-family: 'Kanit', sans-serif;"><i class="bi bi-bar-chart-fill text-primary me-2"></i>ภาพรวมระบบสารสนเทศ (CMS)</h5>
     <div class="row g-3 mb-4">
         <div class="col-12 col-sm-6 col-xl-3">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-white" style="border-left: 5px solid #e5a91e !important;">
@@ -92,15 +93,15 @@
             </div>
         </div>
     </div>
-
+ 
     <!-- 4. ส่วนวิเคราะห์กราฟเส้นรายเดือน (Line Chart Section - สรุปยอดเข้าชม ปะทะ ยอดแชร์ ปะทะ ยอดดาวน์โหลด) -->
-    <div class="row g-4 mb-4">
+    <div class="row g-4 mb-4 mt-2">
         <div class="col-12 col-xl-8">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
                 <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
                     <div>
                         <h5 class="fw-bold mb-0 text-dark" style="font-family: 'Kanit', sans-serif;">
-                            <i class="bi bi-graph-up text-warning me-2"></i>เทรนด์สรุปยอดผู้เข้าชม ปะทะ ยอดการแชร์ ปะทะ ยอดดาวน์โหลดรายเดือน
+                            <i class="bi bi-graph-up text-warning me-2"></i>เทรนด์สรุปยอดผู้เข้าชม ปะทะ ยอดแชร์ ปะทะ ยอดดาวน์โหลด
                         </h5>
                         <small class="text-muted">ปีงบประมาณประจำ พ.ศ. {{ $trendYear + 543 }}</small>
                     </div>
@@ -108,7 +109,7 @@
                     <form action="{{ url()->current() }}" method="GET" id="trendChartFilterForm" class="d-flex align-items-center gap-2">
                         <input type="hidden" name="perf_year" value="{{ $perfYear }}">
                         <input type="hidden" name="perf_month" value="{{ $perfMonth }}">
-                        <label for="trendYearSelect" class="text-nowrap small fw-bold text-secondary font-heading">ระบุปีเทรนด์:</label>
+                        <label for="trendYearSelect" class="text-nowrap small fw-bold text-secondary">ระบุปีเทรนด์:</label>
                         <select name="trend_year" id="trendYearSelect" class="form-select form-select-sm border-secondary-subtle rounded-3 fw-bold bg-light" style="width: 120px;" onchange="document.getElementById('trendChartFilterForm').submit();">
                             @foreach($availableYears as $year)
                                 <option value="{{ $year }}" {{ $trendYear == $year ? 'selected' : '' }}>พ.ศ. {{ $year + 543 }}</option>
@@ -168,11 +169,12 @@
         </div>
     </div>
 
+    
     <!-- 5. ส่วนวิเคราะห์กราฟแท่งเปรียบเทียบประสิทธิภาพรายคอนเทนต์ (Top 10 Content Performance) -->
     <div class="row g-4 mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm rounded-4 bg-white">
-                <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3">
+                <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
                     <div>
                         <h5 class="fw-bold mb-0 text-dark" style="font-family: 'Kanit', sans-serif;">
                             <i class="bi bi-bar-chart-line-fill text-danger me-2"></i>บทความยอดนิยมสูงสุด 10 อันดับแรก (Top 10 Content Performance)
@@ -216,6 +218,98 @@
                             <i class="bi bi-bar-chart-steps fs-1 text-secondary opacity-40 d-block mb-2"></i>
                             <h6 class="fw-bold text-dark mb-1">ไม่พบข้อมูลดัชนีชี้วัดประสิทธิภาพในมิติเวลานี้</h6>
                             <p class="small text-muted mb-0">เนื่องจากไม่มีการจัดสร้างเนื้อหาขึ้นในระยะเวลาที่คัดกรองระบบ</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- แผงควบคุมสถิติการยืมอุปกรณ์ภาพรวม -->
+    <h5 class="fw-bold text-dark mb-3 mt-2" style="font-family: 'Kanit', sans-serif;"><i class="bi bi-box-seam text-info me-2"></i>ภาพรวมระบบให้บริการยืมอุปกรณ์</h5>
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white" style="border-left: 5px solid #8b5cf6 !important;">
+                <div class="card-body d-flex justify-content-between align-items-center p-3.5">
+                    <div>
+                        <span class="text-muted text-uppercase fw-bold d-block mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">รายการทำเรื่องขอยืมอุปกรณ์สะสม</span>
+                        <h3 class="fw-bold mb-0 text-dark" style="font-family: 'Kanit', sans-serif;">
+                            {{ number_format($totalBorrowTransactions) }} <span class="text-muted" style="font-size: 0.85rem; font-weight: normal;">ครั้ง</span>
+                        </h3>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 p-3 rounded-4 text-primary" style="color: #8b5cf6 !important; background-color: rgba(139, 92, 246, 0.1) !important;"><i class="bi bi-ui-checks fs-3"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white" style="border-left: 5px solid #06b6d4 !important;">
+                <div class="card-body d-flex justify-content-between align-items-center p-3.5">
+                    <div>
+                        <span class="text-muted text-uppercase fw-bold d-block mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">ปริมาณครุภัณฑ์ที่ถูกยืมออกไปสะสม</span>
+                        <h3 class="fw-bold mb-0 text-dark" style="font-family: 'Kanit', sans-serif;">
+                            {{ number_format($totalBorrowItemsQty) }} <span class="text-muted" style="font-size: 0.85rem; font-weight: normal;">ชิ้น</span>
+                        </h3>
+                    </div>
+                    <div class="bg-info bg-opacity-10 p-3 rounded-4 text-info" style="color: #06b6d4 !important;"><i class="bi bi-tools fs-3"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 6. ส่วนวิเคราะห์กราฟการยืมอุปกรณ์ (Equipment Borrowing Analytics) -->
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mt-5 mb-3 gap-2">
+        <h4 class="h5 mb-0 text-dark fw-bold" style="font-family: 'Kanit', sans-serif;">
+            <i class="bi bi-box-arrow-up-right text-info me-2"></i>รายงานสถิติการยืมอุปกรณ์และครุภัณฑ์
+        </h4>
+        <a href="{{ route('admin.dashboard.export', ['perf_year' => $perfYear, 'perf_month' => $perfMonth]) }}" class="btn btn-sm btn-success fw-bold rounded-pill px-3 shadow-sm">
+            <i class="bi bi-file-earmark-excel me-1"></i> ดาวน์โหลดรายงานสถิตินี้ (Excel)
+        </a>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Donut Chart: สัดส่วนผู้ใช้งาน -->
+        <div class="col-12 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="fw-bold mb-0 text-dark" style="font-family: 'Kanit', sans-serif;">
+                        สัดส่วนประเภทผู้ใช้บริการ
+                    </h6>
+                    <small class="text-muted d-block mt-1">อ้างอิงตามตัวกรองด้านบน</small>
+                </div>
+                <div class="card-body px-4 pb-4 d-flex justify-content-center">
+                    @if(count($chartBorrowUserTypes) > 0)
+                        <div style="position: relative; height: 260px; width: 100%;">
+                            <canvas id="borrowUserTypeChart"></canvas>
+                        </div>
+                    @else
+                        <div class="text-center py-4 my-auto text-muted w-100 border border-dashed rounded-4 bg-light">
+                            <i class="bi bi-pie-chart fs-1 text-secondary opacity-40 d-block mb-2"></i>
+                            <small class="fw-bold">ไม่มีข้อมูล</small>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <!-- Bar Chart: 10 อันดับอุปกรณ์ -->
+        <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="fw-bold mb-0 text-dark" style="font-family: 'Kanit', sans-serif;">
+                        10 อันดับอุปกรณ์ที่ถูกยืมมากที่สุด (นับตามจำนวนชิ้น)
+                    </h6>
+                    <small class="text-muted d-block mt-1">อ้างอิงตามตัวกรองด้านบน</small>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    @if(count($chartTopEquipments) > 0)
+                        <div style="position: relative; height: 260px; width: 100%;">
+                            <canvas id="topEquipChart"></canvas>
+                        </div>
+                    @else
+                        <div class="text-center py-4 my-auto text-muted w-100 border border-dashed rounded-4 bg-light">
+                            <i class="bi bi-bar-chart fs-1 text-secondary opacity-40 d-block mb-2"></i>
+                            <small class="fw-bold">ไม่มีข้อมูล</small>
                         </div>
                     @endif
                 </div>
@@ -362,6 +456,80 @@
                     scales: {
                         y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { family: "'Sarabun', sans-serif" } } },
                         x: { grid: { display: false }, ticks: { font: { family: "'Sarabun', sans-serif", size: 11 }, maxRotation: 20, minRotation: 0 } }
+                    }
+                }
+            });
+        }
+
+        // 🟢 [Chart 3] สัดส่วนประเภทผู้ใช้ที่ยืมอุปกรณ์ (Donut Chart)
+        const userTypeCtx = document.getElementById('borrowUserTypeChart');
+        if (userTypeCtx) {
+            const userTypeLabels = {!! json_encode(array_keys($chartBorrowUserTypes ?? [])) !!};
+            const userTypeData = {!! json_encode(array_values($chartBorrowUserTypes ?? [])) !!};
+            
+            new Chart(userTypeCtx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: userTypeLabels,
+                    datasets: [{
+                        data: userTypeData,
+                        backgroundColor: ['#8b5cf6', '#06b6d4', '#e5a91e', '#f43f5e'],
+                        borderWidth: 2,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { family: "'Sarabun', sans-serif" }, usePointStyle: true } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ' ' + context.label + ': ' + context.parsed + ' ครั้ง';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 🔵 [Chart 4] 10 อันดับอุปกรณ์ที่ถูกยืมบ่อย (Bar Chart)
+        const equipCtx = document.getElementById('topEquipChart');
+        if (equipCtx) {
+            const equipLabels = {!! json_encode(array_keys($chartTopEquipments ?? [])) !!};
+            const equipData = {!! json_encode(array_values($chartTopEquipments ?? [])) !!};
+
+            new Chart(equipCtx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: equipLabels,
+                    datasets: [{
+                        label: 'จำนวนชิ้นที่ถูกยืม',
+                        data: equipData,
+                        backgroundColor: '#06b6d4',
+                        borderRadius: 4,
+                        barPercentage: 0.5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ' จำนวน: ' + context.parsed.y + ' ชิ้น';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { stepSize: 1, font: { family: "'Sarabun', sans-serif" } } },
+                        x: { grid: { display: false }, ticks: { font: { family: "'Sarabun', sans-serif" } } }
                     }
                 }
             });

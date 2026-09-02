@@ -17,7 +17,7 @@ class LoginController extends Controller
         if (Auth::check()) {
             $user = Auth::user();
             if ($user->is_admin || $user->roles()->exists()) {
-                return redirect()->route('admin.dashboard.index');
+                return redirect()->route('admin.dashboard');
             }
             return redirect()->route('home');
         }
@@ -63,10 +63,10 @@ class LoginController extends Controller
                 $intendedUrl = session()->get('url.intended');
                 if (!$intendedUrl || $intendedUrl === url('/')) {
                     session()->forget('url.intended');
-                    return redirect()->route('admin.dashboard.index');
+                    return redirect()->route('admin.dashboard');
                 }
 
-                return redirect()->intended(route('admin.dashboard.index'));
+                return redirect()->intended(route('admin.dashboard'));
             }
 
             // ผู้ใช้งานทั่วไปที่ไม่มี Role ใดๆ ให้ไปหน้าบ้านปกติ

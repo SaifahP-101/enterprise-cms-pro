@@ -8,6 +8,8 @@ use App\Models\ModalPopup;
 use App\Models\FeaturedVideo;
 use App\Models\CalendarEvent;
 use Carbon\Carbon;
+use App\Models\SatisfactionSummary;
+use Illuminate\Support\Facades\Cache;
 
 class HomeController extends Controller
 {
@@ -126,6 +128,13 @@ class HomeController extends Controller
         $thaiMonths = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
         $currentMonthName = $thaiMonths[$now->month - 1] . ' ' . ($now->year + 543);
 
+        // จำ Cache ไว้ 24 ชั่วโมง (86400 วินาที) ถ้าไม่มีการอัปเดตหลังบ้าน
+        $satisfactionData = Cache::remember('frontend_active_satisfaction_summary', 86400, function () {
+            return SatisfactionSummary::where('is_published', true)
+                                    ->latest()
+                                    ->first();
+        });
+
         return view('frontend.home', compact(
             'slideshows',
             'learningResources',
@@ -138,6 +147,7 @@ class HomeController extends Controller
             'calendarDays',
             'currentMonthName',
             'upcomingEvents',
+            'satisfactionData'
         ));
     }
 }

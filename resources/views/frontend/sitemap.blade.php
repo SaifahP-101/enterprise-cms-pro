@@ -21,7 +21,7 @@
     <!-- 3. ผังลูปดึงหมวดหมู่เนื้อหาหลักหลัก (Dynamic Categories Node) -->
     @foreach ($categories as $category)
     <url>
-        <loc>{{ route('categories.view', $category->slug) }}</loc>
+        <loc>{{ route('contents.category', $category->slug) }}</loc>
         <lastmod>{{ $category->updated_at->toAtomString() }}</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.5</priority>

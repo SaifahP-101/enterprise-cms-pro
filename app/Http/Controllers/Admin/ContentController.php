@@ -251,6 +251,28 @@ class ContentController extends Controller
     }
 
     /**
+     * 🗑️ ลบไฟล์เอกสาร PDF ของบทความ
+     */
+    public function removePdf($id)
+    {
+        $user = Auth::user();
+        $content = Content::findOrFail($id);
+
+        if (!$user->canManageCategory($content->category_id)) {
+            return redirect()->back()->with('error', '🚨 คุณไม่มีสิทธิ์จัดการบทความในหมวดหมู่นี้');
+        }
+
+        if ($content->secure_pdf_path && Storage::disk('local')->exists($content->secure_pdf_path)) {
+            Storage::disk('local')->delete($content->secure_pdf_path);
+        }
+
+        $content->update(['secure_pdf_path' => null]);
+
+        return redirect()->route('admin.contents.edit', $content->id)
+            ->with('success', 'ลบไฟล์เอกสาร PDF เรียบร้อยแล้ว');
+    }
+
+    /**
      * 🗑️ ฟังก์ชันลบทิ้งชั่วคราว (Soft Delete)
      */
     public function destroy($id)

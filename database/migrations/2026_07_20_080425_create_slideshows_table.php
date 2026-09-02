@@ -11,6 +11,7 @@ class CreateSlideshowsTable extends Migration
         Schema::create('slideshows', function (Blueprint $table) {
             $table->id();
             $table->string('title')->nullable()->comment('ข้อความอธิบายแบนเนอร์ (สำหรับ alt tag SEO)');
+            $table->string('subtitle')->comment('ข้อย่อยแบนเนอร์ (สำหรับ alt tag SEO)'); 
             $table->string('image_path')->comment('พาร์ทจัดเก็บรูปภาพแบนเนอร์ในระบบ');
             $table->string('link_url')->nullable()->comment('ลิงก์ปลายทางเมื่อคลิกรูปภาพ');
             $table->integer('sort_order')->default(0)->comment('ลำดับการแสดงผล');

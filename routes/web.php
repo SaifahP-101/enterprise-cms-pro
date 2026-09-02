@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan; 
 
 /*
 |--------------------------------------------------------------------------
@@ -18,6 +19,8 @@ use App\Http\Controllers\FileStreamController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\FeedbackController; 
+use App\Http\Controllers\EquipmentBorrowController;
+use App\Http\Controllers\WebCronController;
 
 // 🛠️ Admin Workspace Controllers
 use App\Http\Controllers\Admin\DashboardController;
@@ -36,7 +39,78 @@ use App\Http\Controllers\Admin\FeaturedVideoController as AdminFeaturedVideoCont
 use App\Http\Controllers\Admin\CalendarEventController as AdminCalendarEventController;
 use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\Admin\BackupController;
- 
+use App\Http\Controllers\Admin\EquipmentBorrowAdminController; 
+use App\Http\Controllers\Admin\SatisfactionSummaryController;
+
+Route::get('/system-queue-reset', function (\Illuminate\Http\Request $request) {
+    // ใส่รหัสป้องกันคนนอกเข้ามายิงเล่น
+    if ($request->query('token') !== 'ResetQueue2026!') {
+        abort(403, 'Unauthorized Access');
+    }
+
+    try {
+        // Step 1: เคลียร์ตาราง failed_jobs
+        Artisan::call('queue:flush');
+        $flushOutput = Artisan::output();
+
+        // Step 3: รีสตาร์ท Queue Worker ให้โหลด Config/Memory ใหม่
+        Artisan::call('queue:restart');
+        $restartOutput = Artisan::output();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'ดำเนินการล้างคิวขยะและรีสตาร์ท Worker เรียบร้อยแล้ว!',
+            'details' => [
+                'flush' => $flushOutput,
+                'restart' => $restartOutput
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ], 500);
+    }
+});
+
+Route::get('/dev/composer-dump', function () {
+    // 1. ระบบรักษาความปลอดภัยเบื้องต้น: ตรวจสอบ Secret Token ผ่าน URL parameter
+    // ตัวอย่างการเรียกใช้งาน: https://your-domain.com/dev/composer-dump?key=MySecretKey123
+    $secretKey = request('key');
+    if ($secretKey !== 'MySecretKey123') {
+        return response('Unauthorized: Invalid Key', 401);
+    }
+
+    // 2. ตรวจสอบว่า Server เปิดใช้งานฟังก์ชัน shell_exec หรือไม่
+    if (!function_exists('shell_exec')) {
+        return response('Error: shell_exec() function is disabled on this server.', 500);
+    }
+
+    try {
+        // 3. รันคำสั่ง composer dump-autoload (ใช้ 2>&1 เพื่อดึง Error log ออกมาแสดงถ้าเกิดปัญหา)
+        // กรณี Server หา composer ไม่เจอ อาจต้องใส่ Path เต็ม เช่น /usr/local/bin/composer
+        $output = shell_exec('composer dump-autoload 2>&1');
+
+        return response("<pre>--- Executing composer dump-autoload ---\n\n{$output}</pre>");
+    } catch (\Exception $e) {
+        return response('Execution Failed: ' . $e->getMessage(), 500);
+    }
+});
+
+Route::get('/dev/clear-cache', function () {
+    if (request('key') !== 'MySecretKey123') {
+        return response('Unauthorized', 401);
+    }
+    // https://culture.tru.ac.th/dev/clear-cache?key=MySecretKey123
+    // ล้าง Cache โครงสร้างทั้งหมดของ Laravel
+    Artisan::call('optimize:clear');
+
+    return response('<pre>Laravel Optimization Cache Cleared Successfully!</pre>');
+});
+
+// URL สำหรับให้ External Service ยิงเข้ามากระตุ้น
+Route::get('/web-cron/{action}', [WebCronController::class, 'handle'])->middleware('webcron');
+
 /*
 |--------------------------------------------------------------------------
 | 🌐 2. Public & Frontend Routes (หน้าร้าน แขก และ SEO)
@@ -47,14 +121,7 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap')
 
 // 🏠 หน้าแรกหลักองค์กร
 Route::get('/', [HomeController::class, 'index'])->name('home');
-
-// 📱 ระบบลงทะเบียนยืมอุปกรณ์และครุภัณฑ์หน้าบ้าน (Self-Service)
-Route::get('/borrow', [BorrowController::class, 'create'])->name('borrow.create');
-Route::post('/borrow', [BorrowController::class, 'store'])
-    ->name('borrow.store')
-    ->middleware('throttle:10,1'); // ป้องกันสแปม 10 ครั้ง/นาที
-Route::get('/borrow/success/{id}', [BorrowController::class, 'success'])->name('borrow.success');
-
+     
 // 📚 คลังสารสนเทศหน้าบ้าน
 Route::get('/contents', [ContentController::class, 'index'])->name('contents.index');
 Route::get('/category/{slug}', [ContentController::class, 'indexByCategory'])->name('contents.category');
@@ -84,6 +151,15 @@ Route::post('/content/{id}/download', [ContentController::class, 'downloadPdf'])
     ->name('contents.download')
     ->middleware('throttle:10,1');
 
+    // หน้าแบบฟอร์มลงทะเบียนยืม (ชี้ URL นี้ไปทำ QR Code)
+Route::get('/borrow/register', [EquipmentBorrowController::class, 'create'])->name('borrow.create');
+
+// รับค่าจากแบบฟอร์มเพื่อบันทึก
+Route::post('/borrow/register', [EquipmentBorrowController::class, 'store'])->name('borrow.store');
+
+// หน้าแสดงผลเมื่อลงทะเบียนสำเร็จ
+Route::get('/borrow/success', [EquipmentBorrowController::class, 'success'])->name('borrow.success');
+
 /*
 |--------------------------------------------------------------------------
 | 🔐 3. Authentication Routes (ระบบสมาชิก ล็อกอิน และกู้รหัสผ่าน)
@@ -111,7 +187,8 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     
     // 📊 4.1 แดชบอร์ดควบคุมหลัก
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/export', [DashboardController::class, 'exportStats'])->name('dashboard.export');
 
     // 👥 4.2 บริหารจัดการผู้ใช้และสิทธิ์ RBAC
     Route::middleware(['permission:manage_users'])->group(function () {
@@ -152,6 +229,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::match(['post', 'patch'], '/contents/{id}/restore', [AdminContentController::class, 'restore'])->name('contents.restore');
         Route::delete('/contents/{id}/force-delete', [AdminContentController::class, 'forceDelete'])->name('contents.force_delete');
         
+        Route::delete('/contents/{id}/remove-pdf', [AdminContentController::class, 'removePdf'])->name('contents.remove_pdf');
         Route::get('/contents/download-logs', [AdminContentController::class, 'downloadLogs'])->name('contents.download_logs');
         Route::delete('/contents/download-logs/{id}', [AdminContentController::class, 'destroyDownloadLog'])->name('contents.download_logs.destroy');
         
@@ -182,6 +260,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     // 💻 4.10 จัดการหน้าเพจอิสระ Static Pages
     Route::middleware(['permission:manage_pages'])->group(function () {
+        Route::delete('/pages/{id}/remove-pdf', [AdminPageController::class, 'removePdf'])->name('pages.remove_pdf');
         Route::resource('pages', AdminPageController::class)->except(['show']);
     });
 
@@ -189,8 +268,28 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::middleware(['permission:view_feedbacks'])->group(function () {
         Route::resource('feedbacks', AdminFeedbackController::class)->only(['index', 'update', 'destroy']);
     });
+
+    Route::middleware(['permission:manage_borrows'])->group(function () {
+        // หน้ารายการลงทะเบียนยืม
+        Route::get('/borrows', [EquipmentBorrowAdminController::class, 'index'])->name('borrows.index');
+        // ลบข้อมูล (Soft Delete)
+        Route::delete('/borrows/{id}', [EquipmentBorrowAdminController::class, 'destroy'])->name('borrows.destroy');
+        // Export Excel
+        Route::get('/borrows/export', [EquipmentBorrowAdminController::class, 'export'])->name('borrows.export'); 
+    });
  
     // 🗄️ 4.13 Backup Workspace Routes
     Route::get('/settings/backup', [BackupController::class, 'index'])->name('settings.backup');
     Route::post('/settings/backup/run', [BackupController::class, 'runManualBackup'])->name('settings.backup.run');
+    Route::get('/settings/backup/status', [BackupController::class, 'checkStatus'])->name('settings.backup.status');
+    // docker-compose exec app php artisan cms:backup-offsite --sync
+
+    // โมดูลสรุปความพึงพอใจ (Satisfaction Summary)
+    Route::get('/satisfactions', [SatisfactionSummaryController::class, 'index'])->name('satisfactions.index');
+    Route::post('/satisfactions', [SatisfactionSummaryController::class, 'store'])->name('satisfactions.store');
+    Route::put('/satisfactions/{satisfaction}', [SatisfactionSummaryController::class, 'update'])->name('satisfactions.update');
+    Route::delete('/satisfactions/{satisfaction}', [SatisfactionSummaryController::class, 'destroy'])->name('satisfactions.destroy');
+    // เปลี่ยนสถานะการแสดงผล
+    Route::patch('/satisfactions/{satisfaction}/toggle', [SatisfactionSummaryController::class, 'togglePublish'])->name('satisfactions.toggle');
+    
 });

@@ -307,7 +307,7 @@
                 <h2 class="fw-bold text-dark border-bottom pb-2 mb-3 font-heading" style="font-size: 16pt !important;"><i class="bi bi-tags-fill text-secondary me-2"></i>คีย์เวิร์ดแท็ก</h2>
                 <div class="d-flex flex-wrap gap-2">
                     @forelse($content->tags ?? [] as $tag)
-                        <span class="badge bg-light text-secondary border px-3 py-2 rounded-3 fw-medium"><i class="bi bi-hash text-muted"></i>{{ $tag->name }}</span>
+                        <span class="badge bg-light text-secondary border px-3 py-2 rounded-3 fw-medium" style="white-space: unset; text-align: start; word-break: break-all;"><i class="bi bi-hash text-muted"></i>{{ $tag->name }}</span>
                     @empty
                         <span class="small text-muted italic">ไม่มีแท็ก</span>
                     @endforelse

@@ -68,5 +68,6 @@ class Kernel extends HttpKernel
         // ลงทะเบียนผู้คุ้มกันหลังบ้าน Enterprise CMS
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
         'permission' => \App\Http\Middleware\CheckPermission::class,
+        'webcron' => \App\Http\Middleware\WebCronSecurity::class,
     ];
 }

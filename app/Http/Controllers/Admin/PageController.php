@@ -165,6 +165,26 @@ class PageController extends Controller
     }
 
     /**
+     * 🗑️ ลบไฟล์เอกสาร PDF ของหน้าเพจอิสระ
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function removePdf($id)
+    {
+        $page = Page::findOrFail($id);
+
+        if ($page->secure_pdf_path && Storage::disk('local')->exists($page->secure_pdf_path)) {
+            Storage::disk('local')->delete($page->secure_pdf_path);
+        }
+
+        $page->update(['secure_pdf_path' => null]);
+
+        return redirect()->route('admin.pages.edit', $page->id)
+            ->with('success', 'ลบไฟล์เอกสาร PDF ของหน้าเพจเรียบร้อยแล้ว');
+    }
+
+    /**
      * 🗑️ ย้ายหน้าเพจลงสู่ถังขยะชั่วคราว (Soft Delete)
      *
      * @param  int  $id
